@@ -1,12 +1,13 @@
 import RPi.GPIO as GPIO
 from time import sleep
 
+
 # Pins for Motor Driver Inputs 
-Motor1A = 18
-Motor2A = 16
+Motor1A = 16        # Green Wire
+Motor2A = 18        # Blue Wire
 MotorA_PWM = 22
-Motor1B = 19
-Motor2B = 26
+Motor1B = 19        # Green Wire
+Motor2B = 26        # Blue Wire
 MotorB_PWM = 24
 Stby = 15
 
@@ -29,12 +30,15 @@ def loop():
     p_a.start(0)
     p_b.start(0)
 
+    # Stby: Allow H-bridges to work when high
+    # (has a pull down resistor much be actively pulled HIGH)
+    GPIO.output(Stby, GPIO.HIGH)
+
     # Going forwards (one motor for now)
     GPIO.output(Motor1A, GPIO.HIGH)
     GPIO.output(Motor2A, GPIO.LOW)
-    GPIO.output(Motor1B, GPIO.LOW)
+    GPIO.output(Motor1B, GPIO.HIGH)
     GPIO.output(Motor2B, GPIO.LOW)
-    GPIO.output(Stby, GPIO.HIGH)
     print("Forward")
 
     p_a.ChangeDutyCycle(85)
@@ -44,9 +48,9 @@ def loop():
 
     # Going backwards (one motor for now)
     GPIO.output(Motor1A, GPIO.LOW)
-    GPIO.output(Motor2A, GPIO.LOW)
-    GPIO.output(Motor1B, GPIO.HIGH)
-    GPIO.output(Motor2B, GPIO.LOW)
+    GPIO.output(Motor2A, GPIO.HIGH)
+    GPIO.output(Motor1B, GPIO.LOW)
+    GPIO.output(Motor2B, GPIO.HIGH)
     print("Reverse")
 
     p_a.ChangeDutyCycle(85)
@@ -56,7 +60,11 @@ def loop():
 
     # Stop
     GPIO.output(Motor1A, GPIO.LOW)
+    GPIO.output(Motor2A, GPIO.LOW)
     GPIO.output(Motor1B, GPIO.LOW)
+    GPIO.output(Motor2B, GPIO.LOW)
+
+    # Return motor controller to low power state
     GPIO.output(Stby, GPIO.LOW)
 
 
