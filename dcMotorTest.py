@@ -14,7 +14,7 @@ Stby = 15
 
 def setup():
     GPIO.setmode(GPIO.BOARD)  # GPIO Numbering
-    GPIO.setup(Motor1A, GPIO.OUT)  # All pins as Outputs
+    GPIO.setup(Motor1A, GPIO.OUT)
     GPIO.setup(Motor2A, GPIO.OUT)
     GPIO.setup(MotorA_PWM, GPIO.OUT)
 
