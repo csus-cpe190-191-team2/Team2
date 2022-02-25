@@ -13,7 +13,7 @@ Stby = 15
 
 
 def setup():
-    GPIO.setmode(GPIO.BOARD)  # GPIO Numbering
+    GPIO.setmode(GPIO.BOARD)        # GPIO Numbering Scheme
     GPIO.setup(Motor1A, GPIO.OUT)
     GPIO.setup(Motor2A, GPIO.OUT)
     GPIO.setup(MotorA_PWM, GPIO.OUT)
@@ -25,6 +25,7 @@ def setup():
 
 
 def loop():
+    # Initiate PWM
     p_a = GPIO.PWM(MotorA_PWM, 100)
     p_b = GPIO.PWM(MotorB_PWM, 100)
     p_a.start(0)
@@ -34,7 +35,7 @@ def loop():
     # (has a pull down resistor much be actively pulled HIGH)
     GPIO.output(Stby, GPIO.HIGH)
 
-    # Going forwards (one motor for now)
+    # Going forwards
     GPIO.output(Motor1A, GPIO.HIGH)
     GPIO.output(Motor2A, GPIO.LOW)
     GPIO.output(Motor1B, GPIO.HIGH)
@@ -46,7 +47,7 @@ def loop():
     print("85%")
     sleep(3)
 
-    # Going backwards (one motor for now)
+    # Going backwards
     GPIO.output(Motor1A, GPIO.LOW)
     GPIO.output(Motor2A, GPIO.HIGH)
     GPIO.output(Motor1B, GPIO.LOW)
