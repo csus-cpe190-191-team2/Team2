@@ -10,10 +10,14 @@ class Input:
 
         # Get list of currently connected input devices
         device_list = [evdev.InputDevice(path) for path in evdev.list_devices()]
-
+        
         # Attach to device with keyboard input
         for device in device_list:
-            if "Keyboard" or "keyboard" in device.name:
+            print(device.name)
+            name = device.name
+            string1 = 'Keyboard'
+            string2 = 'keyboard'
+            if string1 in name or string2 in name:
                 self.gamepad = evdev.InputDevice(device)
                 self.deviceName = device
         if self.gamepad is not None:
@@ -42,27 +46,28 @@ class Input:
         }
 
         eightbitdo_mapping = {
-            "up": "UP",
-            "down": "DOWN",
-            "left": "LEFT",
-            "right": "RIGHT",
-            "a":  "A",
-            "x":  "X",
-            "y":  "Y",
-            "b":  "B",
-            "select":  "SELECT",
-            "start":  "START",
-            "Ltrigger":  "LEFT TRIGGER",
-            "Rtrigger":  "RIGHT TRIGGER"
+            46 : "UP",
+            32 : "DOWN",
+            18 : "LEFT",
+            33 : "RIGHT",
+            34 :  "A",
+            35 :  "X",
+            23 :  "Y",
+            36 :  "B",
+            49 :  "SELECT",
+            24 :  "START",
+            37 :  "LEFT TRIGGER",
+            50 :  "RIGHT TRIGGER"
         }
 
         # Assign button map to appropriate input device
         if "Bluetooth Gamepad Keyboard" in self.deviceName.name:
             button_map = ipega_mapping
-        elif "8bitdo" in self.deviceName.name:
+        elif "8BitDo" in self.deviceName.name:
             button_map = eightbitdo_mapping
         else:
             print("Device does not match any recognized button map...")
+            quit()
 
         # Begin reading in input
         try:

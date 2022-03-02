@@ -1,4 +1,5 @@
 import controller
+import os
 
 if __name__ == '__main__':  # Program start from here
     # code
@@ -17,3 +18,4 @@ if __name__ == '__main__':  # Program start from here
     finally:
         print("clean up")
         # GPIO.cleanup()  # clean all gpio
+        os._exit(0)
