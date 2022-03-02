@@ -1,11 +1,12 @@
 import evdev
-#from evdev import InputDevice,categorize,ecodes
+# from evdev import InputDevice,categorize,ecodes
+
 
 class Input:
     def __init__(self):
-        path = "/dev/input"
         self.gamepad = None
         self.deviceName = None
+        path = "/dev/input"
 
         # Get list of currently connected input devices
         device_list = [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -22,10 +23,10 @@ class Input:
 
     # Handle controller input
     def input_listen(self):
-        currInput = None        # Temp var holds current input value
-        currButtonMap = None    # Adjust button map based on currently connected input device
+        curr_input = None        # Temp var holds current input value
+        button_map = None    # Adjust button map based on currently connected input device
 
-        ipegaButtonMap = {
+        ipega_mapping = {
             103: "UP",
             108: "DOWN",
             105: "LEFT",
@@ -40,7 +41,7 @@ class Input:
             25:  "RIGHT TRIGGER"
         }
 
-        eightBitDoButtonMap = {
+        eightbitdo_mapping = {
             "up": "UP",
             "down": "DOWN",
             "left": "LEFT",
@@ -57,24 +58,24 @@ class Input:
 
         # Assign button map to appropriate input device
         if "Bluetooth Gamepad Keyboard" in self.deviceName.name:
-            currButtonMap = ipegaButtonMap
+            button_map = ipega_mapping
         elif "8bitdo" in self.deviceName.name:
-            currButtonMap = eightBitDoButtonMap
+            button_map = eightbitdo_mapping
         else:
             print("Device does not match any recognized button map...")
 
         # Begin reading in input
         try:
             for event in self.gamepad.read_loop():
-                #print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)    # DEBUG
+                # print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)# DEBUG
                 if event.value == 1:    # 1 means button is pressed, 0 is released
-                    currInput = currButtonMap.get(event.code)
-                    if currInput == "START":
+                    curr_input = button_map.get(event.code)
+                    if curr_input == "START":
                         self.gamepad.close()
                         quit()
-                    print(currInput)    # Temp output for DEBUG, eventually handle motor control here...
+                    print(curr_input)    # Temp output for DEBUG, eventually handle motor control here...
         except OSError as e:
             print("Controller Disconnected: ", e)
+            # Stop Motors
         except AttributeError as e:
             print("Button map configuration error: ", e)
-
