@@ -43,7 +43,6 @@ if __name__ == '__main__':  # Program start from here
                         # Exit manual mode if START button is pressed
                         if curr_input == "START":
                             inputDev.motor_control.stop()
-                            #motor.destroy()
                             inputDev.gamepad.close()
                             quit()
                         if curr_input == "Ltrigger":

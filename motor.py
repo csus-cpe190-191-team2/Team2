@@ -112,7 +112,7 @@ class MotorControl:
             # (has a pull down resistor must be actively pulled HIGH)
             GPIO.output(Stby, GPIO.HIGH)
 
-        self.left_duty /=2
+        self.left_duty /= 2
         self.left_motor.ChangeDutyCycle(self.left_duty)
 
     # Reduce right motor by half to turn right
@@ -122,7 +122,7 @@ class MotorControl:
             # (has a pull down resistor must be actively pulled HIGH)
             GPIO.output(Stby, GPIO.HIGH)
 
-        self.right_duty /=2
+        self.right_duty /= 2
         self.right_motor.ChangeDutyCycle(self.right_duty)
 
     # ### NEEDS WORK: Increase speed of motor

@@ -1,6 +1,5 @@
 import evdev
 import motor
-# from evdev import InputDevice,categorize,ecodes
 
 
 class Input:
@@ -26,21 +25,21 @@ class Input:
 
     # Handle controller input
     def input_listen(self):
-        curr_input = None        # Temp var holds current input value
-        
+        curr_input = None  # Temp var holds current input value
+
         ipega_mapping = {
             103: "UP",
             108: "DOWN",
             105: "LEFT",
             106: "RIGHT",
-            36:  "A",
-            50:  "X",
-            23:  "Y",
-            37:  "B",
-            19:  "SELECT",
-            21:  "START",
-            16:  "LEFT TRIGGER",
-            25:  "RIGHT TRIGGER"
+            36: "A",
+            50: "X",
+            23: "Y",
+            37: "B",
+            19: "SELECT",
+            21: "START",
+            16: "LEFT TRIGGER",
+            25: "RIGHT TRIGGER"
         }
 
         eightbitdo_mapping = {
@@ -48,14 +47,14 @@ class Input:
             32: "DOWN",
             18: "LEFT",
             33: "RIGHT",
-            34:  "A",
-            35:  "X",
-            23:  "Y",
-            36:  "B",
-            49:  "SELECT",
-            24:  "START",
-            37:  "LEFT TRIGGER",
-            50:  "RIGHT TRIGGER"
+            34: "A",
+            35: "X",
+            23: "Y",
+            36: "B",
+            49: "SELECT",
+            24: "START",
+            37: "LEFT TRIGGER",
+            50: "RIGHT TRIGGER"
         }
 
         # Assign button map to appropriate input device
