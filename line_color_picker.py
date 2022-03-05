@@ -29,6 +29,7 @@ if __name__ == '__main__':
     cv2.createTrackbar("VALUE Min", "HSV", 0,  255, empty)
     cv2.createTrackbar("VALUE Max", "HSV", 255,  255, empty)
 
+    print("Press 'q' to quit")
     while True:
         ret, frame = cap.read() 
         frameHsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
