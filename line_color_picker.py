@@ -13,7 +13,7 @@ def empty(x): return x
 
 
 if __name__ == '__main__':
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)   # input device id: 0-3
     cap.set(3, frameWidth)
     cap.set(4, frameHeight)
 
