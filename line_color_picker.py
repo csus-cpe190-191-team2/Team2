@@ -4,24 +4,50 @@
 
 import cv2
 import numpy as np
+# import lane_detection as lane
 
-frameWidth = 340
+frameWidth = 480
 frameHeight = 240
 
 
 def empty(x): return x
 
 
+def get_histogram(img, min_per=0.1, display=False, region=1):
+
+    if region == 1:
+        hist_vals = np.sum(img, axis=0)
+    else:
+        hist_vals = np.sum(img[img.shape[0]//region:,:], axis=0)
+    print(hist_vals)  # DEBUG output
+    max_value = np.max(hist_vals)
+    min_value = min_per*max_value
+
+    index_array = np.where(hist_vals >= min_value)
+    base_point = int(np.average(index_array))
+    # print(base_point) # DEBUG output
+
+    if display:
+        img_hist = np.zeros((img.shape[0], img.shape[1], 3), np.uint8)
+        for x, intensity in enumerate(hist_vals):
+            cv2.line(img_hist, (x, img.shape[0]), (x, img.shape[0]-int(intensity)//255//region), (255, 0, 255), 1)
+            #cv2.circle(img_hist, (base_point, img.shape[0]), 20, (0,255,255), cv2.FILLED)
+        return base_point, img_hist
+
+    return base_point
+
+
 if __name__ == '__main__':
-    cap = cv2.VideoCapture(2)   # input device id: 0-3
-    cap.set(3, frameWidth)
-    cap.set(4, frameHeight)
+    cap = cv2.VideoCapture(0)   # input device id: 0-3
+    # cap.set(3, frameWidth)
+    # cap.set(4, frameHeight)
+
 
     if not cap.isOpened():
         raise IOError("Cannot open webcam")
 
     cv2.namedWindow("HSV")
-    cv2.resizeWindow("HSV", 340, 240)
+    cv2.resizeWindow("HSV", frameWidth, frameHeight)
     cv2.createTrackbar("HUE Min", "HSV", 0, 179, empty)
     cv2.createTrackbar("HUE Max", "HSV", 179, 179, empty)
     cv2.createTrackbar("SAT Min", "HSV", 0,  255, empty)
@@ -31,7 +57,8 @@ if __name__ == '__main__':
 
     print("Press 'q' to quit")
     while True:
-        ret, frame = cap.read() 
+        ret, frame = cap.read()
+        frame = cv2.resize(frame, (frameWidth, frameHeight))
         frameHsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         h_min = cv2.getTrackbarPos("HUE Min", "HSV")
@@ -47,6 +74,9 @@ if __name__ == '__main__':
         result = cv2.bitwise_and(frame, frame, mask=mask)
 
         hStack = np.hstack([frame, result])
+
+        mid_point, img_hist = get_histogram(mask, display=True)
+        cv2.imshow("Histogram", img_hist)
 
         # cv2.imshow('Input',frame)
         # cv2.imshow('Result', result)

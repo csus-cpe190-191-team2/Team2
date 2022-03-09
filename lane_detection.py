@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from scipy.signal import savgol_filter
 
 cap = cv2.VideoCapture(0)   # input device id: 0-3
 curve_list = []
@@ -21,15 +22,15 @@ def get_img(display=False, size=[480, 240]):
 
 def thresholding(img):
     imgHsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lowerWhite = np.array([0, 83, 141])    # Green: 27, 68, 178
-    upperWhite = np.array([140, 255, 255])   # Green: 35, 112, 223
+    lowerWhite = np.array([101, 43, 145])    # Green: 27, 68, 178
+    upperWhite = np.array([135, 255, 206])   # Green: 35, 112, 223
     maskWhite = cv2.inRange(imgHsv, lowerWhite, upperWhite)
     return maskWhite
 
 
 def warp_image(img, points, w, h, inv=False):
     pts1 = np.float32(points)
-    pts2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]])
+    pts2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]]) # np.float32([[0, 0], [w, 0], [0, h], [w, h]])
     if inv:
         matrix = cv2.getPerspectiveTransform(pts2, pts1)
     else:
@@ -69,13 +70,29 @@ def get_histogram(img, min_per=0.1, display=False, region=1):
         hist_vals = np.sum(img, axis=0)
     else:
         hist_vals = np.sum(img[img.shape[0]//region:,:], axis=0)
+
+    hist_vals = savgol_filter(hist_vals, 51, 3) # Smooth out histogram values; reduce noise
     # print(hist_vals)  # DEBUG output
     max_value = np.max(hist_vals)
     min_value = min_per*max_value
 
-    index_array = np.where(hist_vals >= min_value)
-    base_point = int(np.average(index_array))
-    # print(base_point) # DEBUG output
+    index_array = np.int64(np.where(hist_vals >= min_value))
+    index_length = int(index_array[0].size//2)
+
+    # print(index_array[0].size, ' ', index_length, ' ', index_array.shape[1], ' ',
+    #       index_array[0][0:index_length], ' ', index_array[0][0])                 # DEBUG
+
+    if index_array.shape[1] > 1:
+        base_left = int(np.average(index_array[0][:index_length]))
+        base_right = int(np.average(index_array[0][index_length:]))
+    else:
+        base_left = 0
+        base_right = 0
+    # base_point = int(np.average(index_array)) # For detecting only one line
+    # base_point = int(np.average(np.append(base_left, base_right)))  # For detecting two lines
+    base_point = int(np.add(base_left, base_right)//2)  # find midpoint For detecting two lines
+
+    print("left: ", base_left, "\tRight: ", base_right, "\tMidpoint: ", base_point) # DEBUG output
 
     if display:
         img_hist = np.zeros((img.shape[0], img.shape[1], 3), np.uint8)
@@ -137,7 +154,7 @@ def get_lane_curve(img, display=0):
     mid_point, img_hist = get_histogram(img_warp, display=True, min_per=0.5, region=4)
     curve_avg_point, img_hist = get_histogram(img_warp, display=True, min_per=0.9)
     curve_raw = curve_avg_point - mid_point
-    print(curve_avg_point-mid_point)
+    # print(curve_avg_point-mid_point)
 
     # ## Step 4
     curve_list.append(curve_raw)
@@ -156,8 +173,8 @@ def get_lane_curve(img, display=0):
         img_result = cv2.addWeighted(img_result, 1, imgLaneColor, 1, 0)
         # midY = 450//2
         midY = int(img_result.shape[1]*0.46)
-        cv2.putText(img_result, str(curve), (w_t // 2 - 80, 85), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 0, 255), 3)
-        print("(", w_t // 2, ",", midY, ") (", (w_t // 2 + (curve * 3)), ",", midY, ") ", img_result.shape)  # DEBUG
+        cv2.putText(img_result, str(curve/100), (w_t // 2 - 80, 85), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 0, 255), 3)
+        # print("(", w_t // 2, ",", midY, ") (", (w_t // 2 + (curve * 3)), ",", midY, ") ", img_result.shape)  # DEBUG
         # cv2.line(img_result, (50, 225), (200, 225), (255,0,0), 5) # DEBUG
         cv2.line(img_result, (w_t // 2, midY), (w_t // 2 + (curve * 3), midY), (255, 0, 255), 5)
         cv2.line(img_result, ((w_t // 2 + (curve * 3)), midY - 25), (w_t // 2 + (curve * 3), midY + 25), (0, 255, 0), 5)
@@ -189,13 +206,13 @@ def get_lane_curve(img, display=0):
 
 
 if __name__ == '__main__':
-    init_trackbar_vals = [0, 0, 0, 200]
+    init_trackbar_vals = [9, 56, 0, 113]  # DEFAULT: 0,0,0,200
     initialize_trackbars(init_trackbar_vals)
     frame_counter = 0
 
     while cap.isOpened():
         img = get_img(display=False)
         curve = get_lane_curve(img, display=2)
-        print(curve)
+        # print(curve)
         #cv2.imshow("Video", img)   # temp DEBUG
         cv2.waitKey(1)
