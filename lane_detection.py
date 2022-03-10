@@ -22,8 +22,8 @@ def get_img(display=False, size=[480, 240]):
 
 def thresholding(img):
     imgHsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lowerWhite = np.array([101, 43, 145])    # Green: 27, 68, 178
-    upperWhite = np.array([135, 255, 206])   # Green: 35, 112, 223
+    lowerWhite = np.array([70, 210, 149])    # Green: 27, 68, 178
+    upperWhite = np.array([141, 255, 205])   # Green: 35, 112, 223
     maskWhite = cv2.inRange(imgHsv, lowerWhite, upperWhite)
     return maskWhite
 
@@ -71,7 +71,7 @@ def get_histogram(img, min_per=0.1, display=False, region=1):
     else:
         hist_vals = np.sum(img[img.shape[0]//region:,:], axis=0)
 
-    hist_vals = savgol_filter(hist_vals, 51, 3) # Smooth out histogram values; reduce noise
+    # hist_vals = savgol_filter(hist_vals, 51, 3) # Smooth out histogram values; reduce noise
     # print(hist_vals)  # DEBUG output
     max_value = np.max(hist_vals)
     min_value = min_per*max_value
@@ -150,6 +150,27 @@ def get_lane_curve(img, display=0):
     img_warp = warp_image(img_thresh, points, w_t, h_t)
     img_warp_points = draw_points(img_copy, points)
 
+    # ## Step 2.5
+    edges = cv2.Canny(img_warp, 0, 1000)
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 10, maxLineGap=9000)
+    for line in lines:
+        x1,y1,x2,y2 = line[0]
+
+        # rho,theta = line[0]
+        # a = np.cos(theta)
+        # b = np.sin(theta)
+        # x0 = a * rho
+        # y0 = b * rho
+        # x1 = int(x0 + 1000 * (-b))
+        # y1 = int(y0 + 1000 * (a))
+        # x2 = int(x0 - 1000 * (-b))
+        # y2 = int(y0 - 1000 * (a))
+        cv2.line(img_result, (x1,y1), (x2,y2), (0,0,255), 3)
+
+
+
+    print(img_warp.shape)
+
     # ## Step 3
     mid_point, img_hist = get_histogram(img_warp, display=True, min_per=0.5, region=4)
     curve_avg_point, img_hist = get_histogram(img_warp, display=True, min_per=0.9)
@@ -206,7 +227,7 @@ def get_lane_curve(img, display=0):
 
 
 if __name__ == '__main__':
-    init_trackbar_vals = [9, 56, 0, 113]  # DEFAULT: 0,0,0,200
+    init_trackbar_vals = [50, 132, 0, 187]  # DEFAULT: 0,0,0,200
     initialize_trackbars(init_trackbar_vals)
     frame_counter = 0
 
