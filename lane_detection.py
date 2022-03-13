@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from scipy.signal import savgol_filter
+#from scipy.signal import savgol_filter
 
 cap = cv2.VideoCapture(0)   # input device id: 0-3
 curve_list = []
