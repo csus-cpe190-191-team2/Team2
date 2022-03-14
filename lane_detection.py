@@ -22,10 +22,10 @@ def get_img(display=False, size=[480, 240]):
 
 def thresholding(img):
     imgHsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lowerWhite = np.array([70, 210, 149])    # Green: 27, 68, 178
-    upperWhite = np.array([141, 255, 205])   # Green: 35, 112, 223
-    maskWhite = cv2.inRange(imgHsv, lowerWhite, upperWhite)
-    return maskWhite
+    lowerBlue = np.array([81, 54, 140])  # Green: 27, 68, 178
+    upperBlue = np.array([128, 255, 255])  # Green: 35, 112, 223
+    maskBlue = cv2.inRange(imgHsv, lowerBlue, upperBlue)
+    return maskBlue
 
 
 def warp_image(img, points, w, h, inv=False):
@@ -153,19 +153,20 @@ def get_lane_curve(img, display=0):
     # ## Step 2.5
     edges = cv2.Canny(img_warp, 0, 1000)
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, 10, maxLineGap=9000)
-    for line in lines:
-        x1,y1,x2,y2 = line[0]
+    if lines is not None:
+        for line in lines:
+            x1,y1,x2,y2 = line[0]
 
-        # rho,theta = line[0]
-        # a = np.cos(theta)
-        # b = np.sin(theta)
-        # x0 = a * rho
-        # y0 = b * rho
-        # x1 = int(x0 + 1000 * (-b))
-        # y1 = int(y0 + 1000 * (a))
-        # x2 = int(x0 - 1000 * (-b))
-        # y2 = int(y0 - 1000 * (a))
-        cv2.line(img_result, (x1,y1), (x2,y2), (0,0,255), 3)
+            # rho,theta = line[0]
+            # a = np.cos(theta)
+            # b = np.sin(theta)
+            # x0 = a * rho
+            # y0 = b * rho
+            # x1 = int(x0 + 1000 * (-b))
+            # y1 = int(y0 + 1000 * (a))
+            # x2 = int(x0 - 1000 * (-b))
+            # y2 = int(y0 - 1000 * (a))
+            cv2.line(img_result, (x1,y1), (x2,y2), (0,0,255), 3)
 
 
 
