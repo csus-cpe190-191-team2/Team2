@@ -228,9 +228,8 @@ def draw_lanes(img, left_fit, right_fit, warp_points):
     cv2.fillPoly(color_img, np.int_(points), (0, 200, 255))
     # inv_perspective = inv_perspective_warp(color_img)
     h_t, w_t, ch = img.shape
-    inv_perspective = warp_image(img, warp_points, w_t, h_t, inv=True)
-    #
-    print(img.shape, ' ', inv_perspective.shape)
+    inv_perspective = warp_image(color_img, warp_points, w_t, h_t, inv=True)
+    #print(img.shape, ' ', inv_perspective.shape)
     inv_perspective = cv2.addWeighted(img, 1, inv_perspective, 0.7, 0)
     return inv_perspective
 
