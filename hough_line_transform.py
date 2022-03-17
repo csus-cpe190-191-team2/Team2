@@ -276,6 +276,11 @@ if __name__ == '__main__':
             print('*** ', curverad, ' + ', lane_curve, ' ***')
             img_ = draw_lanes(img, curves[0], curves[1], warp_points=points)
             # plt.imshow(img_, cmap='hsv')
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            fontColor = (0, 0, 0)
+            fontSize = 0.5
+            cv2.putText(img, 'Lane Curvature: {:.0f} m'.format(lane_curve), (570, 620), font, fontSize, fontColor, 2)
+            cv2.putText(img, 'Vehicle offset: {:.4f} m'.format(curverad[2]), (570, 650), font, fontSize, fontColor, 2)
             cv2.imshow("Curve", img_)
 
 
