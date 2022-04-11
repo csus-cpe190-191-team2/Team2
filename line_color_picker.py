@@ -38,13 +38,14 @@ def get_histogram(img, min_per=0.1, display=False, region=1):
 
 
 if __name__ == '__main__':
-    cap = cv2.VideoCapture(0)   # input device id: 0-3
+    # cap = cv2.VideoCapture(0)   # input device id: 0-3
+    cap = cv2.imread("lane_with_polygon.png")
     # cap.set(3, frameWidth)
     # cap.set(4, frameHeight)
 
 
-    if not cap.isOpened():
-        raise IOError("Cannot open webcam")
+    # if not cap.isOpened():
+    #     raise IOError("Cannot open webcam")
 
     cv2.namedWindow("HSV")
     cv2.resizeWindow("HSV", frameWidth, frameHeight)
@@ -57,7 +58,8 @@ if __name__ == '__main__':
 
     print("Press 'q' to quit")
     while True:
-        ret, frame = cap.read()
+        #ret, frame = cap.read()
+        frame = cap # TEST
         frame = cv2.resize(frame, (frameWidth, frameHeight))
         frameHsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
