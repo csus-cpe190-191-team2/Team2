@@ -163,13 +163,11 @@ if __name__ == '__main__':
         img_result = img.copy()
         warp_points, thresh_points, hough_points, save_points = val_trackbars()
 
-        img = draw_points(img, warp_points)     # Draw warp points
-
         if save_points:
             print("SAVE")
 
         # ## Threshold and warp image
-        img_thresh = thresholding(img, thresh_points)
+        img_thresh = thresholding(img.copy(), thresh_points)
         img_warp = warp_image(img_thresh, warp_points, w_t, h_t)
         _, img_hist = get_histogram(img_warp, display=True, region=2)
         edges = cv2.Canny(img_warp, 0, 1000)
@@ -196,6 +194,8 @@ if __name__ == '__main__':
 
         # img_result = warp_image(img_warp, points, w_t, h_t, inv=True)
         # img_result = cv2.addWeighted(img, 0.6, img_result, 0.8, 0)
+
+        img = draw_points(img, warp_points)  # Draw warp points
 
         # Display Image Stack
         imgStacked = stack_images(1, ([img, img_thresh, edges],
