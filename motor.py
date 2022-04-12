@@ -33,7 +33,7 @@ class MotorControl:
     def __init__(self):
         self.MAX_DUTY = 100     # Limit max motor speed
         self.MED_DUTY = 85      # Medium speed
-        self.MIN_DUTY = 65      # Low speed
+        self.MIN_DUTY = 70      # Low speed
         self.left_duty = 0
         self.right_duty = 0
         setup()              # Setup GPIO
@@ -123,7 +123,7 @@ class MotorControl:
             self.left_duty = self.right_duty = self.MED_DUTY
         # Turn left
         else:
-            self.left_duty = self.MIN_DUTY
+            self.left_duty = self.MIN_DUTY/2
             self.right_duty = self.MAX_DUTY
 
         self.left_motor.ChangeDutyCycle(self.left_duty)
@@ -148,7 +148,7 @@ class MotorControl:
             self.left_duty = self.right_duty = self.MED_DUTY
         # Turn Left
         else:
-            self.right_duty = self.MIN_DUTY
+            self.right_duty = self.MIN_DUTY/2
             self.left_duty = self.MAX_DUTY
 
         self.right_motor.ChangeDutyCycle(self.right_duty)
