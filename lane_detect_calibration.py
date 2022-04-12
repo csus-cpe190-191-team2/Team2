@@ -34,6 +34,10 @@ def warp_image(img, points, w, h, inv=False):
     img_warp = cv2.warpPerspective(img, matrix, (w,h))
     return img_warp
 
+def draw_points(img, points):
+    for x in range(4):
+        cv2.circle(img,(int(points[x][0]), int(points[x][1])), 15, (0,0,255), cv2.FILLED)
+    return img
 
 def get_histogram(img, display=False, region=1):
 
@@ -158,6 +162,8 @@ if __name__ == '__main__':
         img = get_img()
         img_result = img.copy()
         warp_points, thresh_points, hough_points, save_points = val_trackbars()
+
+        img = draw_points(img, warp_points)     # Draw warp points
 
         if save_points:
             print("SAVE")
