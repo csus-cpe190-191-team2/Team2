@@ -11,7 +11,7 @@ if __name__ == '__main__':  # Program start from here
         inputDev = controller.Input()
         manual = motor_handle.M_motor_react()
         auto = motor_handle.A_motor_react()
-        processor = processing.
+        processor = processing.Brain()
         drive_state = True #true is manual, false is auto
         # If input device is connected begin listening for input
         if inputDev.gamepad is not None:
@@ -27,8 +27,9 @@ if __name__ == '__main__':  # Program start from here
 
                         if(drive_state): manual.handle_command(curr_input)
                         else:
-                            if(processing)
-
+                            if(!processing.handle_distance()):
+                                curve[] = lane.get_curve()
+                                object = getObjects()
 
 
 
