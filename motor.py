@@ -152,7 +152,7 @@ class MotorControl:
             self.left_duty = self.right_duty = self.MED_DUTY
         # Turn left
         else:
-            self.left_duty = self.MIN_DUTY/2
+            self.left_duty = self.MED_DUTY/2
             self.right_duty = self.MAX_DUTY
 
         self.left_motor.ChangeDutyCycle(self.left_duty)
@@ -177,7 +177,7 @@ class MotorControl:
             self.left_duty = self.right_duty = self.MED_DUTY
         # Turn Left
         else:
-            self.right_duty = self.MIN_DUTY/2
+            self.right_duty = self.MED_DUTY/2
             self.left_duty = self.MAX_DUTY
 
         self.right_motor.ChangeDutyCycle(self.right_duty)
@@ -248,10 +248,10 @@ class MotorControl:
             self.right_duty = 0
 
         # If in standby mode and at least one motor duty cycle is above zero, activate motor controller
-        if not GPIO.input(Stby) and ((self.left_duty != 0) or (self.right_duty != 0)):
+        if not GPIO.input(Stby):  # Motors disabled when not active
+            # Stby: Allow H-bridges to work when high
+            # (has a pull down resistor must be actively pulled HIGH)
             GPIO.output(Stby, GPIO.HIGH)
-        else:
-            GPIO.output(Stby, GPIO.LOW)
 
         self.left_motor.ChangeDutyCycle(self.left_duty)
         self.right_motor.ChangeDutyCycle(self.right_duty)

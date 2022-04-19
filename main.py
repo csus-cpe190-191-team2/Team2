@@ -1,9 +1,12 @@
 import controller
 import motor
 import os
+import lane_detect as ld
 
 if __name__ == '__main__':  # Program start from here
     # code
+    lane = ld.LaneDetect()
+    auto = False
     try:
         print("Configuring Keyboard Controller Input...")
         # Select current input device based on what is connected
@@ -16,9 +19,13 @@ if __name__ == '__main__':  # Program start from here
             try:
                 for event in inputDev.gamepad.read_loop():
                     # print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)# DEBUG
-                    if event.value == 1:    # 1 means button is pressed, 0 is released
-                        curr_input = inputDev.button_map.get(event.code)
-
+                    if event.value == 1 or event.value == -1:    # 1 means button is pressed, 0 is released
+                        if event.value == -1:
+                            print(event.code+event.value)
+                            curr_input = inputDev.button_map.get(event.code+event.value)
+                        else:
+                            curr_input = inputDev.button_map.get(event.code+event.value)
+                        # print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)# DEBUG
                         print(curr_input)    # Temp output for DEBUG
                         if curr_input == "UP":
                             inputDev.motor_control.forward()
@@ -38,8 +45,8 @@ if __name__ == '__main__':  # Program start from here
                             print("No Function Yet...")
                             #  Do something?
                         if curr_input == "SELECT":
-                            print("No Function Yet...")
-                            #  Do something?
+                            auto = not auto
+                            print("Auto: ", auto)
                         # Exit manual mode if START button is pressed
                         if curr_input == "START":
                             inputDev.motor_control.stop()
@@ -54,6 +61,23 @@ if __name__ == '__main__':  # Program start from here
 
                         # Temp DEBUG output
                         print("Left: ", inputDev.motor_control.left_duty, "\tRight: ", inputDev.motor_control.right_duty)
+
+                        if auto:
+                            lane_curve = lane.get_curve()
+                            print(lane_curve)
+                            if lane_curve[2] > lane_curve[3]:
+                                if lane_curve[2] > 20:
+                                    inputDev.motor_control.turn_left()
+                                    print("Turn Left")
+                            elif lane_curve[3] > 20:
+                                inputDev.motor_control.turn_right()
+                                print("Turn Right")
+                            else:
+                                print("Move forward")
+                                inputDev.motor_control.forward()
+                                inputDev.motor_control.set_speed(3)
+                            # lane.display()
+
 
             except OSError as e:
                 print("Controller Disconnected: ", e)

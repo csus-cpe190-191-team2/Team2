@@ -316,8 +316,8 @@ class LaneDetect:
 
         return left_curverad, right_curverad, left_angle, right_angle, center
 
-    def draw_lanes(self):
-        out_img, curves, lanes, ploty = lane.sliding_window(draw_windows=True)
+    def draw_lanes(self, left_curve, right_curve, center):
+        out_img, curves, lanes, ploty = self.sliding_window(draw_windows=True)
         left_fit = curves[0]
         right_fit = curves[1]
 
@@ -333,25 +333,25 @@ class LaneDetect:
         inv_perspective = cv2.addWeighted(self.img, 1, self.img_warp_inv, 0.7, 0)
 
         # Write var text to image result then stack images
-        mean_radii = np.mean([lane_curve[0], lane_curve[1]])/100
+        mean_radii = np.mean([left_fit[0], right_fit[1]])/100
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_color = (255, 0, 255)
         font_size = 0.6
-        text_str1 = 'Left: ' + '{:.2f}'.format(lane_curve[2]) + ' Right: ' \
-                    + '{:.2f}'.format(lane_curve[3]) + ' deg '
+        text_str1 = 'Left: ' + '{:.2f}'.format(left_curve) + ' Right: ' \
+                    + '{:.2f}'.format(right_curve) + ' deg '
         text_str2 = '{:.2f}'.format(mean_radii) + ' rad/in'
         cv2.putText(inv_perspective, 'Lane Curve: {:}'.format(text_str1),
                     (inv_perspective.shape[1] // 2 - 220, inv_perspective.shape[0] - 215), font, font_size, font_color, 2)
         cv2.putText(inv_perspective, 'Lane Radii: {:}'.format(text_str2),
                     (inv_perspective.shape[1] // 2 - 220, inv_perspective.shape[0] - 190), font, font_size, font_color,2)
-        cv2.putText(inv_perspective, 'Vehicle offset: {:.4f} in'.format(lane_curve[4]),
+        cv2.putText(inv_perspective, 'Vehicle offset: {:.4f} in'.format(center),
                     (inv_perspective.shape[1] // 2 - 220, inv_perspective.shape[0] - 165), font, font_size, font_color, 2)
         self.img_result = stack_images(1, ([inv_perspective, out_img]))
 
         return inv_perspective, out_img
 
-    def display(self):
-        self.draw_lanes()
+    def display(self, left_cr, right_cr, center):
+        self.draw_lanes(left_cr, right_cr, center)
         cv2.imshow('Image Result vs Sliding Window Curve Fit', self.img_result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.error = 1
@@ -364,6 +364,6 @@ if __name__ == '__main__':  # Program start from here
 
     while not lane.error:
         lane_curve = lane.get_curve()
-        lane.display()
+        lane.display(lane_curve[2], lane_curve[3], lane_curve[4])
 
 
