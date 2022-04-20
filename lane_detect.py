@@ -312,7 +312,8 @@ class LaneDetect:
         l_fit_x_int = left_fit_cr[0] * self.img.shape[0] ** 2 + left_fit_cr[1] * self.img.shape[0] + left_fit_cr[2]
         r_fit_x_int = right_fit_cr[0] * self.img.shape[0] ** 2 + right_fit_cr[1] * self.img.shape[0] + right_fit_cr[2]
         lane_center_position = (r_fit_x_int + l_fit_x_int) / 2
-        center = (car_pos - lane_center_position) * xm_per_pix / 10
+        center = (car_pos - lane_center_position)
+        center = (car_pos - center)//10
 
         return left_curverad, right_curverad, left_angle, right_angle, center
 
