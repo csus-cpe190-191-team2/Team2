@@ -149,7 +149,7 @@ class MotorControl:
             GPIO.output(Motor2A, GPIO.LOW)
             GPIO.output(Motor1B, GPIO.LOW)
             GPIO.output(Motor2B, GPIO.HIGH)
-            self.left_duty = self.right_duty = self.MED_DUTY
+            self.left_duty = self.right_duty = self.MIN_DUTY
         # Turn left
         else:
             self.left_duty = self.MED_DUTY/2
@@ -174,7 +174,7 @@ class MotorControl:
             GPIO.output(Motor2A, GPIO.HIGH)
             GPIO.output(Motor1B, GPIO.HIGH)
             GPIO.output(Motor2B, GPIO.LOW)
-            self.left_duty = self.right_duty = self.MED_DUTY
+            self.left_duty = self.right_duty = self.MIN_DUTY
         # Turn Left
         else:
             self.right_duty = self.MED_DUTY/2
