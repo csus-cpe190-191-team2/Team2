@@ -161,14 +161,27 @@ class LaneDetect:
 
         # ### TEMP FIX FOR ONE LINE IN VIEW ### ###############################################
         # while loop will most likely end up being if else statement
-        while np.sum(histogram[:midpoint]) == 0 or np.sum(histogram[midpoint:]) == 0:
-            print("ONLY ONE LANE IN VIEW")
-            self.get_img()
-            self.thresholding()
-            self.warp_image()
-            histogram = self.get_histogram(region=2)
-            # find peaks of left and right halves
-            midpoint = int(histogram.shape[0] / 2)
+        if np.sum(histogram[:midpoint]) == 0 or np.sum(histogram[midpoint:]) == 0:
+            print("LESS THAN TWO LANES IN VIEW")
+            leftx_base = np.argmax(histogram[:midpoint])
+            rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+            color_img = np.zeros_like(self.img)
+            if leftx_base > rightx_base:
+                left = 1
+                right = 0
+            else:
+                left = 0
+                right = 1
+            if draw_windows:
+                return color_img, (-1, -1), (left, right), -1, 1
+            else:
+                return (-1, -1), (left, right), -1, 1
+            # self.get_img()
+            # self.thresholding()
+            # self.warp_image()
+            # histogram = self.get_histogram(region=2)
+            # # find peaks of left and right halves
+            # midpoint = int(histogram.shape[0] / 2)
         # #####################################################################################
 
         # Grab position of left and right line along the x-axis
@@ -271,17 +284,20 @@ class LaneDetect:
                                          isClosed=False, color=(0, 255, 0), thickness=3)
             self.out_img = cv2.polylines(img=self.out_img, pts=np.int32([right]),
                                          isClosed=False, color=(0, 255, 0), thickness=3)
-            return self.out_img, (left_fitx, right_fitx), (left_fit_, right_fit_), ploty
+            return self.out_img, (left_fitx, right_fitx), (left_fit_, right_fit_), ploty, 0
         else:
-            return (left_fitx, right_fitx), (left_fit_, right_fit_), ploty
+            return (left_fitx, right_fitx), (left_fit_, right_fit_), ploty, 0
 
     def get_curve(self):
         self.get_img()
         self.thresholding()
         self.warp_image()
-        curves, lanes, ploty = self.sliding_window()
+        curves, lanes, ploty, error = self.sliding_window()
         leftx = curves[0]
         rightx = curves[1]
+
+        if error:
+            return 0, 0, lanes[0], lanes[1], 0, 1
 
         ploty = np.linspace(0, self.img.shape[0] - 1, self.img.shape[0])
         y_eval = np.max(ploty)
@@ -315,14 +331,18 @@ class LaneDetect:
         center = (car_pos - lane_center_position)
         center = (car_pos - center)//10
 
-        return left_curverad, right_curverad, left_angle, right_angle, center
+        return left_curverad, right_curverad, left_angle, right_angle, center, error
 
     def draw_lanes(self, left_curve, right_curve, center):
-        out_img, curves, lanes, ploty = self.sliding_window(draw_windows=True)
+        out_img, curves, lanes, ploty, error = self.sliding_window(draw_windows=True)
         left_fit = curves[0]
         right_fit = curves[1]
 
         color_img = np.zeros_like(self.img)
+
+        if error:
+            self.img_result = self.img
+            return self.img, self.img
 
         left = np.array([np.transpose(np.vstack([left_fit, ploty]))])
         right = np.array([np.flipud(np.transpose(np.vstack([right_fit, ploty])))])

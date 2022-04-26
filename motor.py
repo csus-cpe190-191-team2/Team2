@@ -54,10 +54,6 @@ class AutoControl:
         print("move with value: {}".format(value))#placeholder for real code
 
 
-
-
-
-
 class MotorControl:
     def __init__(self):
         self.MAX_DUTY = 100     # Limit max motor speed
@@ -263,7 +259,7 @@ class MotorControl:
             # (has a pull down resistor must be actively pulled HIGH)
             GPIO.output(Stby, GPIO.HIGH)
 
-        max_duty = min(self.left_duty, self.right_duty)
+        max_duty = max(self.left_duty, self.right_duty)
 
         # Reduce motor speed gradually
         for i in range(max_duty, -1, -1):
