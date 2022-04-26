@@ -28,32 +28,6 @@ def setup():
     GPIO.setup(MotorB_PWM, GPIO.OUT)
     GPIO.setup(Stby, GPIO.OUT)
 
-
-class AutoControl:
-    def __init__(self):
-        self.MAX_DUTY = 50  # Limit max motor speed
-        self.MED_DUTY = 30  # Medium speed
-        self.MIN_DUTY = 10  # Low speed
-        self.left_duty = 0
-        self.right_duty = 0
-        setup()  # Setup GPIO
-        # Initiate PWM
-        self.left_motor = GPIO.PWM(MotorA_PWM, 100)
-        self.right_motor = GPIO.PWM(MotorB_PWM, 100)
-        self.left_motor.start(self.left_duty)
-        self.right_motor.start(self.right_duty)
-        # Set motor configuration to spin forwards
-        GPIO.output(Motor1A, GPIO.HIGH)
-        GPIO.output(Motor2A, GPIO.LOW)
-        GPIO.output(Motor1B, GPIO.HIGH)
-        GPIO.output(Motor2B, GPIO.LOW)
-        # Keep motor controller in standby mode to start
-        GPIO.output(Stby, GPIO.LOW)
-
-    def move(self, value):
-        print("move with value: {}".format(value))#placeholder for real code
-
-
 class MotorControl:
     def __init__(self):
         self.MAX_DUTY = 100     # Limit max motor speed
