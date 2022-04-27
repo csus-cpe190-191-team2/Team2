@@ -213,8 +213,11 @@ class LaneDetect:
             win_xleft_high = leftx_current + margin
             win_xright_low = rightx_current - margin
             win_xright_high = rightx_current + margin
-            upper_point = [((win_xleft_high+win_xright_low)/2), win_y_high]
-            lower_point = [((win_xleft_high+win_xright_low)/2), win_y_low]
+            upper_point = [int((win_xleft_high+win_xright_low)/2), int(win_y_high)]
+            lower_point = [int((win_xleft_high+win_xright_low)/2), int(win_y_low)]
+            img_shape = self.out_img.shape
+
+            print(upper_point, '\n', lower_point, '\n', self.out_img.shape)
 
             # Draw the windows on the visualization image
             if draw_windows:
@@ -222,7 +225,9 @@ class LaneDetect:
                               (100, 255, 255), 3)
                 cv2.rectangle(self.out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high),
                               (100, 255, 255), 3)
-                cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,200), 4)
+                cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,255), 3)
+                cv2.line(self.out_img, (int(img_shape[1]/2), int(img_shape[0])), (int(img_shape[1]/2), 0), (255, 255, 0), 2)
+                # cv2.line(self.out_img, (0, 240), (480, 0), (0, 0, 200), 4)
 
             # Identify the nonzero pixels in x and y within the window
             good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
