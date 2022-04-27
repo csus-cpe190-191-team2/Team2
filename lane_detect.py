@@ -205,6 +205,10 @@ class LaneDetect:
         right_lane_inds = []
 
         # Step through the windows one by one
+        bottom_one = []
+        top_second = []
+        top_nine = []
+        window_count = 0
         for window in range(nwindows):
             # Identify window boundaries in x and y (and right and left)
             win_y_low = self.img_warp.shape[0] - (window + 1) * window_height
@@ -217,6 +221,13 @@ class LaneDetect:
             lower_point = [int((win_xleft_high+win_xright_low)/2), int(win_y_low)]
             img_shape = self.out_img.shape
 
+            if window_count == 1:
+                bottom_one = lower_point
+            if window_count == 2:
+                top_second = upper_point
+            if window_count == 8:
+                top_nine = upper_point
+
             print(upper_point, '\n', lower_point, '\n', self.out_img.shape)
 
             # Draw the windows on the visualization image
@@ -225,7 +236,7 @@ class LaneDetect:
                               (100, 255, 255), 3)
                 cv2.rectangle(self.out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high),
                               (100, 255, 255), 3)
-                cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,255), 3)
+                #cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,255), 3)
                 cv2.line(self.out_img, (int(img_shape[1]/2), int(img_shape[0])), (int(img_shape[1]/2), 0), (255, 255, 0), 2)
                 # cv2.line(self.out_img, (0, 240), (480, 0), (0, 0, 200), 4)
 
@@ -244,7 +255,10 @@ class LaneDetect:
                 leftx_current = np.int32(np.mean(nonzerox[good_left_inds]))
             if len(good_right_inds) > minpix:
                 rightx_current = np.int32(np.mean(nonzerox[good_right_inds]))
-
+            window_count += 1
+        #cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,255), 3)
+        cv2.line(self.out_img, (top_second[0], top_second[1]), (bottom_one[0], bottom_one[1]), (79,252,17), 2) #short line
+        cv2.line(self.out_img, (top_nine[0], top_nine[1]), (bottom_one[0], bottom_one[1]), (17,173,252), 2) #long line
         # Concatenate the arrays of indices
         left_lane_inds = np.concatenate(left_lane_inds)
         right_lane_inds = np.concatenate(right_lane_inds)
