@@ -87,6 +87,7 @@ class MotorControl:
         if self.toggle:
             off()
             #self.left_duty = self.right_duty = self.ZERO_DUTY
+            self.off_duty()
             self.current_duty = self.ZERO_DUTY
             self.toggle = False
         else:
