@@ -1,0 +1,157 @@
+import RPi.GPIO as GPIO
+from time import sleep
+
+# GPIO Pins for Motor Driver Inputs
+Motor1A = 16        # Green Wire 16
+Motor2A = 18        # Blue Wire 18
+MotorA_PWM = 24
+Motor1B = 19        # Green Wire 19
+Motor2B = 26        # Blue Wire 26
+MotorB_PWM = 22
+Stby = 15
+
+def reset():
+    GPIO.cleanup()
+
+def setup():
+    GPIO.setmode(GPIO.BOARD)
+    ##
+    GPIO.setup(Stby, GPIO.OUT)
+    ##
+    GPIO.setup(Motor1A, GPIO.OUT)
+    GPIO.setup(Motor2A, GPIO.OUT)
+    GPIO.setup(MotorA_PWM, GPIO.OUT)
+    ##
+    GPIO.setup(Motor1B, GPIO.OUT)
+    GPIO.setup(Motor2B, GPIO.OUT)
+    GPIO.setup(MotorB_PWM, GPIO.OUT)
+
+
+def left():
+    GPIO.output(Motor1A, GPIO.HIGH)
+    GPIO.output(Motor2A, GPIO.LOW)
+    GPIO.output(Motor1B, GPIO.LOW)
+    GPIO.output(Motor2B, GPIO.HIGH)
+
+
+def right():
+    GPIO.output(Motor1A, GPIO.LOW)
+    GPIO.output(Motor2A, GPIO.HIGH)
+    GPIO.output(Motor1B, GPIO.HIGH)
+    GPIO.output(Motor2B, GPIO.LOW)
+
+
+def front():
+    GPIO.output(Motor1A, GPIO.HIGH)
+    GPIO.output(Motor2A, GPIO.LOW)
+    GPIO.output(Motor1B, GPIO.HIGH)
+    GPIO.output(Motor2B, GPIO.LOW)
+
+
+def back():
+    GPIO.output(Motor1A, GPIO.LOW)
+    GPIO.output(Motor2A, GPIO.HIGH)
+    GPIO.output(Motor1B, GPIO.LOW)
+    GPIO.output(Motor2B, GPIO.HIGH)
+
+def on():
+    GPIO.output(Stby, GPIO.HIGH)
+
+def off():
+    GPIO.output(Stby, GPIO.LOW)
+
+class MotorControl:
+    def __init__(self):
+        self.MAX_DUTY = 100
+        self.MED_DUTY = 66
+        self.MIN_DUTY = 33
+        self.ZERO_DUTY = 0
+        self.current_duty = 0
+        #self.left_duty = 0
+        #self.right_duty = 0
+        self.toggle = False
+        #
+        setup()
+        #
+        self.left_motor = GPIO.PWN(MotorA_PWM, 100) #test the second parameter
+        self.right_motor = GPIO.PWN(MotorB_PWM, 100) ###
+        #
+        front()
+        #
+        self.left_motor.start(0)
+        self.right_motor.start(0)
+        #
+        off()
+
+    def toggle_state(self):
+        if self.toggle:
+            off()
+            #self.left_duty = self.right_duty = self.ZERO_DUTY
+            self.current_duty = self.ZERO_DUTY
+            self.toggle = False
+        else:
+            on()
+            self.toggle = True
+
+    def forward(self):
+        if self.toggle:
+            front()
+            # Sync motors
+            # max_duty = max(self.left_duty, self.right_duty)
+            # self.left_duty = self.right_duty = max_duty
+            #
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def turn_right(self, offset):
+        if self.toggle:
+            front()
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty-offset)
+
+    def turn_left(self, offset):
+        if self.toggle:
+            front()
+            self.left_motor.ChangeDutyCycle(self.current_duty-offset)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def backward(self):
+        if self.toggle:
+            back()
+            # Sync motors
+            # max_duty = max(self.left_duty, self.right_duty)
+            # self.left_duty = self.right_duty = max_duty
+            #
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def rotate_right(self):
+        if self.toggle:
+            right() ##check configuration!!!!!!!!!
+            # Sync motors
+            # max_duty = max(self.left_duty, self.right_duty)
+            # self.left_duty = self.right_duty = max_duty
+            #
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def rotate_left(self):
+        if self.toggle:
+            left()  ##check configuration!!!!!!!!!
+            # Sync motors
+            # max_duty = max(self.left_duty, self.right_duty)
+            # self.left_duty = self.right_duty = max_duty
+            #
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def speed_up(self, delta=10):
+        if self.toggle:
+            if not ((self.current_duty + delta) > 100):
+               self.current_duty = self.current_duty + delta
+
+    def speed_down(self, delta=10):
+        if self.toggle:
+            if not ((self.current_duty - delta) < 0):
+               self.current_duty = self.current_duty - delta
+
