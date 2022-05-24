@@ -63,8 +63,8 @@ def off():
 class MotorControl:
     def __init__(self):
         self.MAX_DUTY = 100
-        self.MED_DUTY = 66
-        self.MIN_DUTY = 33
+        self.MED_DUTY = 65
+        self.MIN_DUTY = 35
         self.ZERO_DUTY = 0
         self.current_duty = 0
         #self.left_duty = 0
@@ -155,3 +155,11 @@ class MotorControl:
             if not ((self.current_duty - delta) < 0):
                self.current_duty = self.current_duty - delta
 
+    def default_duty(self):
+        if self.toggle:
+            self.current_duty = self.MIN_DUTY
+
+    def off_duty(self):
+        if self.toggle:
+            self.left_motor.ChangeDutyCycle(self.ZERO_DUTY)
+            self.right_motor.ChangeDutyCycle(self.ZERO_DUTY)
