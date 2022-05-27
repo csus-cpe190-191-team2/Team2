@@ -10,7 +10,24 @@ Motor2B = 26        # Blue Wire 26
 MotorB_PWM = 22
 Stby = 15
 
-def reset():
+def test():
+    front()
+    left_motor = GPIO.PWN(MotorA_PWM, 100)
+    right_motor = GPIO.PWN(MotorB_PWM, 100)
+    left_motor.start(25)
+    right_motor.start(25)
+    on()
+    sleep(3)
+    off()
+    back()
+    left_motor.ChangeDutyCycle(50)
+    right_motor.ChangeDutyCycle(50)
+    on()
+    sleep(2)
+    off()
+    destroy()
+
+def destroy():
     GPIO.cleanup()
 
 def setup():
@@ -164,3 +181,7 @@ class MotorControl:
         if self.toggle:
             self.left_motor.ChangeDutyCycle(self.ZERO_DUTY)
             self.right_motor.ChangeDutyCycle(self.ZERO_DUTY)
+
+setup()
+test()
+destroy()
