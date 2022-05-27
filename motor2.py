@@ -12,8 +12,8 @@ Stby = 15
 
 def test():
     front()
-    left_motor = GPIO.PWN(MotorA_PWM, 100)
-    right_motor = GPIO.PWN(MotorB_PWM, 100)
+    left_motor = GPIO.PWM(MotorA_PWM, 100)
+    right_motor = GPIO.PWM(MotorB_PWM, 100)
     left_motor.start(25)
     right_motor.start(25)
     on()
@@ -90,8 +90,8 @@ class MotorControl:
         #
         setup()
         #
-        self.left_motor = GPIO.PWN(MotorA_PWM, 100) #test the second parameter
-        self.right_motor = GPIO.PWN(MotorB_PWM, 100) ###
+        self.left_motor = GPIO.PWM(MotorA_PWM, 100) #test the second parameter
+        self.right_motor = GPIO.PWM(MotorB_PWM, 100) ###
         #
         front()
         #
