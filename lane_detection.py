@@ -399,6 +399,12 @@ class LaneDetect:
 
     def display(self, left_cr, right_cr, center):
         self.draw_lanes(left_cr, right_cr, center)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        fontColor = (0, 0, 0)
+        fontSize = 0.5
+        cv2.putText(self.img_result, 'Angle: {:.2f} in'.format(self.angle),
+                    (self.img_result.shape[1] // 2 - 100, self.img_result.shape[0] - 35), font, fontSize, fontColor, 2)
+
         cv2.imshow('Image Result vs Sliding Window Curve Fit', self.img_result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.error = 1
