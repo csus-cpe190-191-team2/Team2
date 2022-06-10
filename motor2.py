@@ -182,6 +182,3 @@ class MotorControl:
             self.left_motor.ChangeDutyCycle(self.ZERO_DUTY)
             self.right_motor.ChangeDutyCycle(self.ZERO_DUTY)
 
-setup()
-test()
-destroy()

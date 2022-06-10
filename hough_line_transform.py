@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 cap = cv2.VideoCapture(0)   # input device id: 0-3
 
@@ -15,8 +15,10 @@ def get_img(display=False, size=[480, 240]):
 
 def thresholding(img):
     imgHsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    lowerBlue = np.array([81, 54, 140])    # Green: 27, 68, 178
-    upperBlue = np.array([128, 255, 255])   # Green: 35, 112, 223
+    lowerBlue = np.array([26, 0, 17])
+    upperBlue = np.array([96, 255, 255])
+    #lowerBlue = np.array([38, 0, 14])
+    #upperBlue = np.array([179, 255, 213])
     maskBlue = cv2.inRange(imgHsv, lowerBlue, upperBlue)
     return maskBlue
 

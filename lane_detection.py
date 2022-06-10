@@ -360,7 +360,7 @@ class LaneDetect:
         return left_curverad, right_curverad, left_angle, right_angle, center, error
 
     def draw_lanes(self, left_curve, right_curve, center):
-        out_img, curves, lanes, ploty, error, angle = self.sliding_window(draw_windows=True)
+        out_img, curves, lanes, ploty, error = self.sliding_window(draw_windows=True)
         left_fit = curves[0]
         right_fit = curves[1]
 
