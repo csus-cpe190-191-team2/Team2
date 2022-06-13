@@ -257,12 +257,14 @@ class LaneDetect:
             if len(good_right_inds) > minpix:
                 rightx_current = np.int32(np.mean(nonzerox[good_right_inds]))
             window_count += 1
+
         #cv2.line(self.out_img, (upper_point[0],upper_point[1]), (lower_point[0],lower_point[1]), (0,0,255), 3)
         cv2.line(self.out_img, (top_second[0], top_second[1]), (bottom_one[0], bottom_one[1]), (79,252,17), 2) #short line
         x_diff = top_second[0] - (int(self.out_img.shape[1]/2))
         y_diff = (int(self.out_img.shape[0])) - top_second[1] #will always be positive
         self.angle = math.degrees(math.atan2(y_diff,x_diff))
         #cv2.line(self.out_img, (top_nine[0], top_nine[1]), (bottom_one[0], bottom_one[1]), (17,173,252), 2) #long line
+
         # Concatenate the arrays of indices
         left_lane_inds = np.concatenate(left_lane_inds)
         right_lane_inds = np.concatenate(right_lane_inds)

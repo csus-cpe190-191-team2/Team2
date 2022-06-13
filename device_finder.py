@@ -1,14 +1,21 @@
 import evdev
+import asyncio
 from evdev import InputDevice, categorize, ecodes
 
 path = "/dev/input"
+
+async def print_events(device):
+    async for event in device.async_read_loop():
+        print(device.path, evdev.categorize(event), sep=': ')
 
 class Controller:
     def __init__(self, dev=0):
         self.gamepad = None
         self.device_name = None
         self.map = {}
+        self.loop = True
         self.set_controller(dev)
+        self.set_map()
 
     def kill_device(self):
         self.gamepad.close()
@@ -44,7 +51,6 @@ class Controller:
                 print("Keyboard not found...exiting")
                 quit()
         print("Connected to: ", self.gamepad)
-        self.set_map()
 
     def get_codes(self):
         for event in self.gamepad.read_loop():
@@ -91,9 +97,14 @@ class Controller:
             print("Device does not match any recognized button map...")
             quit()
 
-controller = Controller(2)
-controller.get_codes()
-controller.kill_device()
-print("Done")
-# sys.exit(0)
-quit()
+    def listen(self):
+        for device in self.gamepad:
+            asyncio.ensure_future(print_events(device))
+        loop = asyncio.get_event_loop()
+        loop.run_forever()
+
+# controller = Controller(2)
+# controller.get_codes()
+# controller.kill_device()
+# print("Done")
+# quit()
