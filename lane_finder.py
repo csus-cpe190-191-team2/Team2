@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 
 def stack_images():
+    pass
 
 class LaneFinder:
     def __init__(self, cap_dev=0):
@@ -84,9 +85,9 @@ class LaneFinder:
             self.img_warp = cv2.warpPerspective(img_in, matrix, (self.w_t, self.h_t))
 
     def sliding_window(self, nwindows=9, margin=60, minpix=10, draw_windows=False): #polyfit and window drawing and finds angle
+        pass
 
-
-    def get_histogram(self):
+    def get_histogram(self, display=False, region=1):
         if region == 1:
             hist_vals = np.sum(self.img_warp, axis=0)
         else:
@@ -105,7 +106,7 @@ class LaneFinder:
     def display(self, left_cr, right_cr, center):
         self.draw_lanes(left_cr, right_cr, center)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        fontColor = (0, 0, 0)
+        fontColor = (255, 0, 255)
         fontSize = 0.5
         cv2.putText(self.img_result, 'Angle: {:.2f} in'.format(self.angle),
                     (self.img_result.shape[1] // 2 - 100, self.img_result.shape[0] - 35), font, fontSize, fontColor, 2)
@@ -116,7 +117,7 @@ class LaneFinder:
             self.destroy()
 
     def draw_lanes(self):
-
+        pass
 
     def destroy(self):
         self.cap.release()

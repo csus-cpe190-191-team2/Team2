@@ -87,6 +87,8 @@ class MotorControl:
         #self.left_duty = 0
         #self.right_duty = 0
         self.toggle = False
+        self.auto = False
+        self.loop = True
         #
         setup()
         #
@@ -99,6 +101,12 @@ class MotorControl:
         self.right_motor.start(0)
         #
         off()
+
+    def toggle_auto(self):
+        if self.auto:
+            self.auto = False
+        else:
+            self.auto = True
 
     def toggle_state(self):
         if self.toggle:
@@ -121,15 +129,17 @@ class MotorControl:
             self.left_motor.ChangeDutyCycle(self.current_duty)
             self.right_motor.ChangeDutyCycle(self.current_duty)
 
-    def turn_right(self, offset):
+    def turn_right(self):
         if self.toggle:
             front()
+            offset = (self.current_duty / 2)
             self.left_motor.ChangeDutyCycle(self.current_duty)
             self.right_motor.ChangeDutyCycle(self.current_duty-offset)
 
-    def turn_left(self, offset):
+    def turn_left(self):
         if self.toggle:
             front()
+            offset = (self.current_duty / 2)
             self.left_motor.ChangeDutyCycle(self.current_duty-offset)
             self.right_motor.ChangeDutyCycle(self.current_duty)
 
@@ -176,6 +186,8 @@ class MotorControl:
     def default_duty(self):
         if self.toggle:
             self.current_duty = self.MIN_DUTY
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
 
     def off_duty(self):
         if self.toggle:

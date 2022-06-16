@@ -4,16 +4,19 @@ from evdev import InputDevice, categorize, ecodes
 
 path = "/dev/input"
 
-async def print_events(device):
+async def print_events_loop(device):
     async for event in device.async_read_loop():
         print(device.path, evdev.categorize(event), sep=': ')
+
+async def print_events_single(device):
+    event = device.async_read_one()
+    print(device.path, evdev.categorize(event), sep=': ')
 
 class Controller:
     def __init__(self, dev=0):
         self.gamepad = None
         self.device_name = None
         self.map = {}
-        self.loop = True
         self.set_controller(dev)
         self.set_map()
 
@@ -97,11 +100,22 @@ class Controller:
             print("Device does not match any recognized button map...")
             quit()
 
-    def listen(self):
-        for device in self.gamepad:
-            asyncio.ensure_future(print_events(device))
+    def loop_listen(self):
+        asyncio.ensure_future(print_events_loop(self.gamepad))
         loop = asyncio.get_event_loop()
         loop.run_forever()
+        print("listening...")
+
+    def single_listen(self):
+        asyncio.ensure_future(print_events_loop(self.gamepad))
+
+    def read_command(self):
+        event = self.gamepad.read_one()
+        if event == None:
+            return None
+        if event.value == 1:
+            curr_input = self.map.get(event.code)
+            return curr_input
 
 # controller = Controller(2)
 # controller.get_codes()
