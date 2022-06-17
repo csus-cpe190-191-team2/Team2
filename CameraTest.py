@@ -9,6 +9,7 @@ if __name__ == '__main__':
 
     while True:
         ret, frame = cap.read()
+        #print('looping')
         frame = cv2.resize( frame, None, fx = 0.5, fy=0.5, interpolation = cv2.INTER_AREA)
         cv2.imshow('Input',frame)
 
