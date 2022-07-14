@@ -154,6 +154,11 @@ if __name__ == '__main__':
         img = get_img()
         h_t, w_t, ch = img.shape
 
+        # Saved variable paths
+        warp_fn = 'vars/warp_points.txt'
+        thresh_fn = 'vars/thresh_points.txt'
+        hough_fn = 'vars/hough_points.txt'
+
     init_trackbar_vals = [50, 132, 0, 187, 81, 128, 54, 255, 140, 255, 10, 150]  # DEFAULT: 0,0,0,200
     initialize_trackbars(init_trackbar_vals, w_t, h_t)
 
@@ -167,7 +172,18 @@ if __name__ == '__main__':
         img = draw_points(img, warp_points)
 
         if save_points:
-            print("SAVE")
+            a = warp_points
+            b = thresh_points
+            c = hough_points
+            np.savetxt(warp_fn, a, fmt='%s')
+            np.savetxt(thresh_fn, b, fmt='%s')
+            np.savetxt(hough_fn, c, fmt='%s')
+            with open(warp_fn, 'r') as file:
+                warp_points = np.loadtxt(file)
+            with open(thresh_fn, 'r') as file:
+                thresh_points = np.loadtxt(file, dtype=int)
+            with open(hough_fn, 'r') as file:
+                hough_points = np.loadtxt(file, dtype=int)
 
 
         # ## Threshold and warp image
