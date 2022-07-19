@@ -85,6 +85,10 @@ class LaneDetect:
 
         if not ret:
             self.error = 1
+        else:
+            # Undistort image
+            dist_vars = np.load('vars/cam_dist_matrix.npz')
+            self.img = cv2.undistort(self.img, dist_vars['mtx'], dist_vars['dist'], None, dist_vars['newcameramtx'])
 
         if display:
             print('Press \'q\' to quit.')
@@ -147,7 +151,7 @@ class LaneDetect:
         else:
             return hist_vals
 
-    def sliding_window(self, nwindows=9, margin=60, minpix=10, draw_windows=False):
+    def sliding_window(self, nwindows=9, margin=50, minpix=10, draw_windows=False):
         left_a, left_b, left_c = [], [], []
         right_a, right_b, right_c = [], [], []
         left_fit_ = np.empty(3)
@@ -159,29 +163,36 @@ class LaneDetect:
         # find peaks of left and right halves
         midpoint = int(histogram.shape[0] / 2)
 
-        # ### TEMP FIX FOR ONE LINE IN VIEW ### ###############################################
-        # while loop will most likely end up being if else statement
+        # ### EXPERIMENTAL FIX FOR LESS THAN TWO LINES IN VIEW #####################################
+        # ### If one lane exists return a one for either left or right depending on which side the
+        # ### line is on. If no line exists return zero for left and right.
+        # ### Error flag is also set and curve values set to -1.
+
         if np.sum(histogram[:midpoint]) == 0 or np.sum(histogram[midpoint:]) == 0:
-            print("LESS THAN TWO LANES IN VIEW")
+
+            histogram = self.get_histogram(region=1)    # Get new hist without splitting region
+
+            print("ERROR: LESS THAN TWO LANES IN VIEW")
             leftx_base = np.argmax(histogram[:midpoint])
-            rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+            rightx_base = np.argmax(histogram[midpoint:])
             color_img = np.zeros_like(self.img)
+
             if leftx_base > rightx_base:
                 left = 1
                 right = 0
-            else:
+            elif leftx_base < rightx_base:
                 left = 0
                 right = 1
+            else:
+                left = 0
+                right = 0
+
+            # Return: radii: (left, right), angle: (left, right), ploty ,error
             if draw_windows:
                 return color_img, (-1, -1), (left, right), -1, 1
             else:
                 return (-1, -1), (left, right), -1, 1
-            # self.get_img()
-            # self.thresholding()
-            # self.warp_image()
-            # histogram = self.get_histogram(region=2)
-            # # find peaks of left and right halves
-            # midpoint = int(histogram.shape[0] / 2)
+
         # #####################################################################################
 
         # Grab position of left and right line along the x-axis
@@ -227,8 +238,6 @@ class LaneDetect:
                 top_second = upper_point
             if window_count == 8:
                 top_nine = upper_point
-
-            print(upper_point, '\n', lower_point, '\n', self.out_img.shape)
 
             # Draw the windows on the visualization image
             if draw_windows:
@@ -319,14 +328,19 @@ class LaneDetect:
         rightx = curves[1]
 
         if error:
-            return 0, 0, lanes[0], lanes[1], 0, 1
+            # DEBUG output
+            print("Curves:", curves)
+            print("Lanes:", lanes)
+            print("Ploty:", ploty)
+            print("Error:", error, '\n')
+            return leftx, rightx, lanes[0], lanes[1], ploty, error
 
-        ploty = np.linspace(0, self.img.shape[0] - 1, self.img.shape[0])
+        ploty = np.linspace(0, self.img_warp.shape[0] - 1, self.img_warp.shape[0])
         y_eval = np.max(ploty)
 
         # Calculate PPI
-        ym_per_pix = 48 / 240  # 30.5 / 720 meters per pixel in y dimension
-        xm_per_pix = 13 / 480  # inches per pixel in x dim  # 3.7 / 720 meters per pixel in x dimension
+        ym_per_pix = 35 / 240  # 50; 35 / 240 meters per pixel in y dimension
+        xm_per_pix = 13 / 480  # 13; inches per pixel in x dim  # 13 / 480 meters per pixel in x dimension
 
         # Fit new polynomials to x,y in world space
         left_fit_cr = np.polyfit(ploty * ym_per_pix, leftx * xm_per_pix, 2)
@@ -346,12 +360,19 @@ class LaneDetect:
         right_angle = (rightx.shape[0] * 360) / right_circum
 
         # Quadratic Formula
-        car_pos = self.img.shape[1] / 2
-        l_fit_x_int = left_fit_cr[0] * self.img.shape[0] ** 2 + left_fit_cr[1] * self.img.shape[0] + left_fit_cr[2]
-        r_fit_x_int = right_fit_cr[0] * self.img.shape[0] ** 2 + right_fit_cr[1] * self.img.shape[0] + right_fit_cr[2]
+        car_pos = self.img_warp.shape[1] / 2
+        l_fit_x_int = left_fit_cr[0] * self.img_warp.shape[0] ** 2 + left_fit_cr[1] * self.img_warp.shape[0] + left_fit_cr[2]
+        r_fit_x_int = right_fit_cr[0] * self.img_warp.shape[0] ** 2 + right_fit_cr[1] * self.img_warp.shape[0] + right_fit_cr[2]
         lane_center_position = (r_fit_x_int + l_fit_x_int) / 2
         center = (car_pos - lane_center_position)
         center = (car_pos - center)//10
+
+        # DEBUG output
+        print("Radian:", left_curverad, '\t', right_curverad)
+        print("Circumference:", left_circum, '\t', right_circum)
+        print("Angle:", left_angle, '\t', right_angle)
+        print("Center:", center)
+        print("Error:", error, '\n')
 
         return left_curverad, right_curverad, left_angle, right_angle, center, error
 
@@ -393,12 +414,14 @@ class LaneDetect:
 
         return inv_perspective, out_img
 
-    def display(self, left_cr, right_cr, center):
-        self.draw_lanes(left_cr, right_cr, center)
-        cv2.imshow('Image Result vs Sliding Window Curve Fit', self.img_result)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            self.error = 1
-            lane.destroy()
+    def display(self, left_cr, right_cr, center, display=False):
+        lane_area, sliding_windows = self.draw_lanes(left_cr, right_cr, center)
+        if display:
+            cv2.imshow('Image Result vs Sliding Window Curve Fit', self.img_result)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                lane.destroy()
+
+        return lane_area, sliding_windows
 
 
 # ## Test Driver
@@ -407,6 +430,6 @@ if __name__ == '__main__':  # Program start from here
 
     while not lane.error:
         lane_curve = lane.get_curve()
-        lane.display(lane_curve[2], lane_curve[3], lane_curve[4])
+        lane.display(lane_curve[2], lane_curve[3], lane_curve[4], display=True)
 
 
