@@ -151,7 +151,7 @@ class LaneDetect:
         else:
             return hist_vals
 
-    def sliding_window(self, nwindows=9, margin=50, minpix=10, draw_windows=False):
+    def sliding_window(self, nwindows=10, margin=60, minpix=10, draw_windows=False):
         left_a, left_b, left_c = [], [], []
         right_a, right_b, right_c = [], [], []
         left_fit_ = np.empty(3)
