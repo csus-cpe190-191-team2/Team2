@@ -90,12 +90,28 @@ class Controller:
             38: "LEFT TRIGGER", #L
             19: "RIGHT TRIGGER" #R
         }
+        ps5_mapping = {
+            16: "UP",
+            18: "DOWN",
+            15: "LEFT",
+            17: "RIGHT",
+            306: "A",
+            305: "X",
+            308: "Y",
+            307: "B",
+            313: "SELECT",
+            314: "START",
+            309: "LEFT TRIGGER",
+            310: "RIGHT TRIGGER"
+        }
         if "Keyboard &" in self.device_name:
             self.map = keyboard_mapping
             print("Keyboard mapped")
         elif "8BitDo" in self.device_name:
             self.map = eightbitdo_mapping
             print("8BitDo mapped")
+        elif "Controller" in self.device_name:
+            self.map = ps5_mapping
         else:
             print("Device does not match any recognized button map...")
             quit()
