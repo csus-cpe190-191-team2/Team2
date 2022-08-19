@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 from tqdm import tqdm
+import motor as m
 
 IMG_HEIGHT = 240
 IMG_WIDTH = 480
@@ -10,13 +11,13 @@ LANE_TRAIN_PATH = '../images/lanes/train'  ### outside of folder scope
 LANE_TEST_PATH = '../images/lanes/test'
 
 class DataControl:
-    stopped = LANE_TRAIN_PATH+'/stopped'
-    forward = LANE_TRAIN_PATH+'/forward'
-    backward = LANE_TRAIN_PATH+'/backward'
-    left = LANE_TRAIN_PATH+'/left'
-    right = LANE_TRAIN_PATH+'/right'
-    Rright = LANE_TRAIN_PATH+'/Rright'
-    Rleft = LANE_TRAIN_PATH+'/Rleft'
+    stopped = 'stopped'
+    forward = 'forward'
+    backward = 'backward'
+    left = 'left'
+    right = 'right'
+    Rright = 'Rright'
+    Rleft = 'Rleft'
 
     LABELS = {
         stopped: 0
@@ -26,6 +27,16 @@ class DataControl:
         , right: 4
         , Rright: 5
         , Rleft: 6
+    }
+
+    INV_LABELS = {
+        0: stopped
+        , 1: forward
+        , 2: backward
+        , 3: left
+        , 4: right
+        , 5: Rright
+        , 6: Rleft
     }
 
     training_data = []
@@ -41,6 +52,7 @@ class DataControl:
     def make_training_data(self):
         for label in self.LABELS:
             print(label)
+            label = os.path.join(LANE_TRAIN_PATH, label)
             for f in tqdm(os.listdir(label)):
                 try:
                     path = os.path.join(label, f)
@@ -64,16 +76,36 @@ class DataControl:
                     elif label == self.Rleft:
                         self.Rleftcnt += 1
                 except Exception as e:
+                    print('error')
                     pass
 
         np.random.shuffle(self.training_data)
         np.save("training_data.npy", self.training_data)
         ###or return self.training_data
 
-    def collect_data(self, set='train', ):
-        save_path = os.path.join(LANE_ROOT, set)
+    def collect_data(self, img, motor, data_set='train'):
+        save_path = os.path.join(LANE_ROOT, data_set)
+        self.existing_dir(save_path)
+        save_path = os.path.join(save_path, self.INV_LABELS[motor.drive_state])
+        if not self.existing_dir(save_path):
+            file_name = os.path.join(save_path, '1.png')
+            cv2.imwrite(file_name, img)
+        else:
+            last_img_num = int(os.listdir(save_path)[-1].strip('.png'))
+            last_img_num += 1
+            last_img_num = str(last_img_num)
+            file_name = last_img_num + '.png'
+            file_name = os.path.join(save_path, file_name)
+            cv2.imwrite(file_name, img)
 
-
-
+    def existing_dir(self, label_dir):
+        if os.path.exists(label_dir):
+            if len(os.listdir(label_dir)) == 0:
+                return False #nothing in dir
+            else:
+                return True
+        else:
+            os.mkdir(label_dir)
+            return False #nothing in dir
 
 
