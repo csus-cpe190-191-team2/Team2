@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from tqdm import tqdm
-import motor as m
+#import motor as m
 
 IMG_HEIGHT = 240
 IMG_WIDTH = 480
@@ -49,38 +49,55 @@ class DataControl:
     Rrightcnt = 0
     Rleftcnt = 0
 
-    def make_training_data(self):
-        for label in self.LABELS:
-            print(label)
-            label = os.path.join(LANE_TRAIN_PATH, label)
-            for f in tqdm(os.listdir(label)):
-                try:
-                    path = os.path.join(label, f)
-                    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-                    img = img.resize(img, (IMG_WIDTH,IMG_HEIGHT)) ### these might be switched
-                    ### use one hot vector
-                    self.training_data.append([np.array(img), np.eye(7)[self.LABELS[label]]])
+    # IMG_SIZE = 50
+    CATS = "../catsvdogs/PetImages/Cat"
+    DOGS = "../catsvdogs/PetImages/Dog"
+    TESTING = "../catsvdogs/PetImages/Testing"
+    CD_LABELS = {CATS: 0, DOGS: 1}
 
-                    if label == self.stopped:
-                        self.stopcnt += 1
-                    elif label == self.forward:
-                        self.fwdcnt += 1
-                    elif label == self.backward:
-                        self.backcnt += 1
-                    elif label == self.left:
-                        self.leftcnt += 1
-                    elif label == self.right:
-                        self.rightcnt += 1
-                    elif label == self.Rright:
-                        self.Rrightcnt += 1
-                    elif label == self.Rleft:
-                        self.Rleftcnt += 1
-                except Exception as e:
-                    print('error')
-                    pass
+    catcount = 0
+    dogcount = 0
+
+    def make_training_data(self):
+        # for label in self.LABELS:
+        for label in self.CD_LABELS:
+            print(label)
+            #label = os.path.join(LANE_TRAIN_PATH, label)
+            for f in tqdm(os.listdir(label)):
+                #if "png" in f:
+                if "jpg" in f:
+                    try:
+                        path = os.path.join(label, f)
+                        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT)) ### these might be switched
+                        ### use one hot vector
+                        # self.training_data.append([np.array(img), np.eye(7)[self.LABELS[label]]])
+                        self.training_data.append([np.array(img), np.eye(2)[self.CD_LABELS[label]]])
+
+                        if label == self.CATS:
+                            self.catcount += 1
+                        elif label == self.DOGS:
+                            self.dogcount += 1
+
+                        # if label == self.stopped:
+                        #     self.stopcnt += 1
+                        # elif label == self.forward:
+                        #     self.fwdcnt += 1
+                        # elif label == self.backward:
+                        #     self.backcnt += 1
+                        # elif label == self.left:
+                        #     self.leftcnt += 1
+                        # elif label == self.right:
+                        #     self.rightcnt += 1
+                        # elif label == self.Rright:
+                        #     self.Rrightcnt += 1
+                        # elif label == self.Rleft:
+                        #     self.Rleftcnt += 1
+                    except Exception as e:
+                        pass
 
         np.random.shuffle(self.training_data)
-        np.save("training_data.npy", self.training_data)
+        np.save("../training_data.npy", self.training_data)
         ###or return self.training_data
 
     def collect_data(self, img, motor, data_set='train'):
