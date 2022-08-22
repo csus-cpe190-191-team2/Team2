@@ -6,6 +6,7 @@ import numpy as np
 import transform as tf
 from tqdm import tqdm
 import os
+import time
 
 class NeuralNet(nn.Module):
     def __init__(self):
@@ -26,6 +27,8 @@ class NeuralNet(nn.Module):
 
         self.VAL_PCT = 0.1  # lets reserve 10% of our data for validation
         self.val_size = 0
+        self._to_device = None
+        self._model_name = ''
 
     def convs(self, x):
         # max pooling over 2x2
@@ -66,7 +69,6 @@ class NeuralNet(nn.Module):
         y = torch.Tensor(data_list)
         #y = torch.as_tensor(data_list)
         torch.save(y, '../y_tensor.pt')
-        self.val_size = int(len(X) * self.VAL_PCT)
 
     def load_tensors(self):
         X = torch.load('../x_tensor.pt')
@@ -79,31 +81,36 @@ class NeuralNet(nn.Module):
     def test_xy(self, X, y):
         return X[-net.val_size:], y[-net.val_size:]
 
-    def epochs(self, train_X, train_y, EPOCHS=1, BATCH_SIZE=100):
+    def train(self, train_X, train_y, test_X, test_y, EPOCHS=1, BATCH_SIZE=100):
         print('epochs starting...')
-        for epoch in tqdm(range(EPOCHS)):
-            for i in tqdm(range(0, len(train_X),
-                                BATCH_SIZE)):  # from 0, to the len of x, stepping BATCH_SIZE at a time. [:50] ..for now just to dev
-                # print(f"{i}:{i+BATCH_SIZE}")
-                batch_X = train_X[i:i + BATCH_SIZE].view(-1, 1, 240, 480)
-                batch_y = train_y[i:i + BATCH_SIZE]
+        with open("model.log", "a") as f:
+            for epoch in range(EPOCHS):
+                for i in tqdm(range(0, len(train_X), BATCH_SIZE)):
+                    batch_X = train_X[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
+                    batch_y = train_y[i:i + BATCH_SIZE]
 
-                self.zero_grad()
+                    batch_X, batch_y = batch_X.to(device), batch_y.to(device)
 
-                outputs = self(batch_X)
-                loss = self.loss_function(outputs, batch_y)
-                loss.backward()
-                self.optimizer.step()  # Does the update
+                    acc, loss = self.fwd_pass(batch_X, batch_y, train=True)
 
-            print(f"Epoch: {epoch}. Loss: {loss}")
+                    # print(f"Acc: {round(float(acc),2)}  Loss: {round(float(loss),4)}")
+                    if i % 50 == 0:
+                        val_acc, val_loss = self.quick_test(test_X, test_y, size=100)
+                        f.write(
+                            f"{MODEL_NAME},{round(time.time(), 3)},{round(float(acc), 2)},{round(float(loss), 4)},{round(float(val_acc), 2)},{round(float(val_loss), 4)}\n")
 
-    def test_acc(self, test_X, test_y):
+    def quick_test(self, test_X, test_y, size=32):
+        X, y = test_X[:size], test_y[:size]
+        val_acc, val_loss = self.fwd_pass(X.view(-1, 1, 240, 480).to(device), y.to(device))
+        return val_acc, val_loss
+
+    def test_acc(self, test_X, test_y):  ###deprecated but still works
         correct = 0
         total = 0
         with torch.no_grad():
             for i in tqdm(range(len(test_X))):
-                real_class = torch.argmax(test_y[i])
-                net_out = self(test_X[i].view(-1, 1, 240, 480))[0]  # returns a list,
+                real_class = torch.argmax(test_y[i]).to(self._to_device)
+                net_out = self(test_X[i].view(-1, 1, 240, 480).to(self._to_device))[0]  # returns a list of probabilities,
                 predicted_class = torch.argmax(net_out)
 
                 if predicted_class == real_class:
@@ -111,23 +118,62 @@ class NeuralNet(nn.Module):
                 total += 1
         print("Accuracy: ", round(correct / total, 3))
 
+    def test_batch_acc(self, test_X, test_y, BATCH_SIZE=100):  ###deprecated but still works
+        for i in tqdm(range(0, len(test_X), BATCH_SIZE)):
+
+            batch_X = test_X[i:i + BATCH_SIZE].view(-1, 1, 240, 480).to(self._to_device)
+            batch_y = test_y[i:i + BATCH_SIZE].to(self._to_device)
+
+            acc, loss = self.fwd_pass(batch_X, batch_y)
+
+            print(f"Acc: {round(float(acc), 2)}  Loss: {round(float(loss), 4)}")
+
+    def fwd_pass(self, X, y, train=False):
+
+        if train:
+            self.zero_grad()
+        outputs = self(X)
+        matches = [torch.argmax(i) == torch.argmax(j) for i, j in zip(outputs, y)]
+        acc = matches.count(True) / len(matches)
+        loss = self.loss_function(outputs, y)
+
+        if train:
+            loss.backward()
+            self.optimizer.step()
+
+        return acc, loss
+
+
+def setup_net():
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
+    net = NeuralNet().to(device)
+    net._to_device = device
+    MODEL_NAME = f"model-{int(time.time())}"
+    net._model_name = MODEL_NAME
+    return net
+
+def tensors_exist(net, name_x, name_y):
+    if not os.path.exists(name_y):
+        net.save_tensors(name_x, name_y)
+
+
 if __name__ == '__main__':
-    net = NeuralNet()
+    net = setup_net()
     print(net)
 
-    if not os.path.exists('../training_data.npy'):
-        dc = tf.DataControl()
-        dc.make_training_data()
+    tf.training_data_exists()
 
-    if not os.path.exists('../x_tensor.pt'):
-        net.save_tensors()
+    tensors_exist(net, '../x_tensor.pt', '../y_tensor.pt')
     X,y = net.load_tensors()
     print('Data transformed to tensors')
 
-    train_X, train_y = net.train_xy(X,y)
-    test_X, test_y = net.test_xy(X,y)
+    train_X, train_y = net.train_xy(X,y) #returns part of tensor
+    test_X, test_y = net.test_xy(X,y)    #returns other part of tensor
     print(len(train_X), len(test_X))
 
-    net.epochs(train_X, train_y)
+    net.train(train_X, train_y, test_X, test_y)
 
-    net.test_acc(test_X, test_y)
+    #net.test_acc(test_X, test_y)
