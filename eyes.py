@@ -85,10 +85,13 @@ class Eyes:
             self.img_warp = cv2.warpPerspective(img_in, matrix, (self.w_t, self.h_t))
 
     def show_img(self, img, string="Thresh Img"):
+        img = cv2.resize(img, (480, 240))
         cv2.imshow(string, img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.destroy()
 
 
-# init
-# show_img(get_thresh_img)
+if __name__ == '__main__':
+    eye = Eyes()
+    while True:
+        eye.show_img(eye.get_img(), 'regular')
