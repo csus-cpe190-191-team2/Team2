@@ -89,7 +89,7 @@ class NeuralNet(nn.Module):
                     batch_X = train_X[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
                     batch_y = train_y[i:i + BATCH_SIZE]
 
-                    batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+                    batch_X, batch_y = batch_X.to(self._to_device), batch_y.to(self._to_device)
 
                     acc, loss = self.fwd_pass(batch_X, batch_y, train=True)
 
@@ -97,11 +97,11 @@ class NeuralNet(nn.Module):
                     if i % 50 == 0:
                         val_acc, val_loss = self.quick_test(test_X, test_y, size=100)
                         f.write(
-                            f"{MODEL_NAME},{round(time.time(), 3)},{round(float(acc), 2)},{round(float(loss), 4)},{round(float(val_acc), 2)},{round(float(val_loss), 4)}\n")
+                            f"{self._model_name},{round(time.time(), 3)},{round(float(acc), 2)},{round(float(loss), 4)},{round(float(val_acc), 2)},{round(float(val_loss), 4)}\n")
 
     def quick_test(self, test_X, test_y, size=32):
         X, y = test_X[:size], test_y[:size]
-        val_acc, val_loss = self.fwd_pass(X.view(-1, 1, 240, 480).to(device), y.to(device))
+        val_acc, val_loss = self.fwd_pass(X.view(-1, 1, 240, 480).to(self._to_device), y.to(self._to_device))
         return val_acc, val_loss
 
     def test_acc(self, test_X, test_y):  ###deprecated but still works
