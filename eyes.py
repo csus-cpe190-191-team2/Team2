@@ -36,7 +36,7 @@ class Eyes:
         self.points = np.array([{'warp_points': warp_points,
                                  'thresh_points': thresh_points}])
 
-    def cap_img(self, display=False, size=[480, 240]):
+    def cap_img(self, size=[480, 240]):
         ret, self.img = self.cap.read()
         self.img = cv2.resize(self.img, (size[0], size[1]))
 
