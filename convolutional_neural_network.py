@@ -50,7 +50,7 @@ class NeuralNet(nn.Module):
     def get_lin(self):
         return self._to_linear
 
-    def save_tensors(self):
+    def save_tensors(self, x_name, y_name):
         training_data = np.load("../training_data.npy", allow_pickle=True)
         data_list = [i[0] for i in tqdm(training_data)]
         print('check0')
@@ -61,14 +61,14 @@ class NeuralNet(nn.Module):
         print('check2')
         X = X / 255.0
         print('check3')
-        torch.save(X, '../x_tensor.pt')
+        torch.save(X, x_name)
         data_list = [i[1] for i in tqdm(training_data)]
         print('check4')
         data_list = np.array(data_list)
         print('check5')
         y = torch.Tensor(data_list)
         #y = torch.as_tensor(data_list)
-        torch.save(y, '../y_tensor.pt')
+        torch.save(y, y_name)
 
     def load_tensors(self):
         X = torch.load('../x_tensor.pt')
@@ -81,12 +81,12 @@ class NeuralNet(nn.Module):
     def test_xy(self, X, y):
         return X[-net.val_size:], y[-net.val_size:]
 
-    def train(self, train_X, train_y, test_X, test_y, EPOCHS=1, BATCH_SIZE=100):
+    def train(self, train_X, train_y, test_X, test_y, EPOCHS=1, BATCH_SIZE=100, to_test=False):
         print('epochs starting...')
-        with open("model.log", "a") as f:
+        with open("../model.log", "a") as f:
             for epoch in range(EPOCHS):
                 for i in tqdm(range(0, len(train_X), BATCH_SIZE)):
-                    batch_X = train_X[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
+                    batch_X = train_X[i:i + BATCH_SIZE].view(-1, 1, 240, 480)
                     batch_y = train_y[i:i + BATCH_SIZE]
 
                     batch_X, batch_y = batch_X.to(self._to_device), batch_y.to(self._to_device)
@@ -94,10 +94,11 @@ class NeuralNet(nn.Module):
                     acc, loss = self.fwd_pass(batch_X, batch_y, train=True)
 
                     # print(f"Acc: {round(float(acc),2)}  Loss: {round(float(loss),4)}")
-                    if i % 50 == 0:
-                        val_acc, val_loss = self.quick_test(test_X, test_y, size=100)
-                        f.write(
-                            f"{self._model_name},{round(time.time(), 3)},{round(float(acc), 2)},{round(float(loss), 4)},{round(float(val_acc), 2)},{round(float(val_loss), 4)}\n")
+                    if to_test:
+                        if i % 50 == 0:
+                            val_acc, val_loss = self.quick_test(test_X, test_y, size=100)
+                            f.write(
+                                f"{self._model_name},{round(time.time(), 3)},{round(float(acc), 2)},{round(float(loss), 4)},{round(float(val_acc), 2)},{round(float(val_loss), 4)}\n")
 
     def quick_test(self, test_X, test_y, size=32):
         X, y = test_X[:size], test_y[:size]
@@ -174,6 +175,10 @@ if __name__ == '__main__':
     test_X, test_y = net.test_xy(X,y)    #returns other part of tensor
     print(len(train_X), len(test_X))
 
-    net.train(train_X, train_y, test_X, test_y)
+    net.train(train_X, train_y, test_X, test_y, to_test=True)
 
     #net.test_acc(test_X, test_y)
+
+    tf.create_plot(net._model_name)
+
+
