@@ -1,11 +1,16 @@
+"""
+#    Acquire camera input and apply
+#    threshold and/or warp to the output image.
+"""
+
 import cv2
 import numpy as np
+import time
 
 class Eyes:
     def __init__(self,cap_dev=0):
         self.cap = cv2.VideoCapture(cap_dev)  # input device id: 0-3
         self.img = []
-        self.img_result = []
         self.points = []
         self.img_thresh = []
         self.img_warp = []
@@ -36,23 +41,23 @@ class Eyes:
         self.img = cv2.resize(self.img, (size[0], size[1]))
 
         if not ret:
-            self.error = 1
+            self.img = None
         else:
             # Undistort image
             dist_vars = np.load('vars/cam_dist_matrix.npz')
             self.img = cv2.undistort(self.img, dist_vars['mtx'], dist_vars['dist'], None, dist_vars['newcameramtx'])
 
-        if display:
-            print('Press \'q\' to quit.')
-            while True:
-                self.cap_img()
-                cv2.imshow('IMG', self.img)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-
     def get_img(self):
         self.cap_img()
         return self.img
+
+    def camera_warm_up(self, warm_time=5):
+        print("Warming Up Camera...")
+        for x in range(warm_time, 0, -1):
+            print(f"{x} seconds remain")
+            self.get_img()
+            time.sleep(1)
+        print("Done.")
 
     def thresholding(self):
         thresh_pts = self.points[0]['thresh_points']
@@ -89,6 +94,19 @@ class Eyes:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.destroy()
 
+    def save_img(self, path):
+        if self.img is not None:
+            cv2.imwrite(path, self.img)
 
-# init
-# show_img(get_thresh_img)
+    def save_warp_img(self, path):
+        if self.img_warp is not None:
+            cv2.imwrite(path, self.img_warp)
+
+    def save_warp_inv_img(self, path):
+        if self.img_warp_inv is not None:
+            cv2.imwrite(path, self.img_warp_inv)
+
+    def save_thresh_img(self, path):
+        if self.img_thresh is not None:
+            cv2.imwrite(path, self.img_thresh)
+

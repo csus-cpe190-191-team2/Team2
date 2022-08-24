@@ -46,6 +46,7 @@ class MotorControl:
         self.current_duty = 0
         self.motor_state = False
         self.drive_state = 0
+        self.prev_drive_state = 0
         self.auto = False  # Toggles autonomous mode
         self.loop = True  # Toggles main loop
         setup()  # Setup GPIO
@@ -64,7 +65,7 @@ class MotorControl:
 
     def get_drive_state_label(self):
         states = ["stopped", "forward", "backward", "left",
-                  "right", "Rright", "Rleft"]
+                  "right", "rotate_right", "rotate_left"]
         return states[self.drive_state]
 
     def toggle_auto(self):
@@ -76,9 +77,14 @@ class MotorControl:
     def toggle_motor(self):
         # stby: Allow H-bridges to work when high
         if self.motor_state:
+            self.prev_drive_state = self.drive_state
+            self.drive_state = 0    # set state to "stopped"
             GPIO.output(Stby, GPIO.LOW)
             self.motor_state = False
         else:
+            temp_state_holder = self.drive_state
+            self.drive_state = self.prev_drive_state
+            self.prev_drive_state = temp_state_holder
             GPIO.output(Stby, GPIO.HIGH)
             self.motor_state = True
 
@@ -168,20 +174,6 @@ class MotorControl:
             self.left_motor.ChangeDutyCycle(self.current_duty)
             self.right_motor.ChangeDutyCycle(self.current_duty)
 
-    # Start moving forward at a default speed
-    def default_duty(self):
-        # Turn on motor controller
-        if not self.motor_state:  # If motor is off, turn on
-            self.toggle_motor()
-
-        # Set to best default speed
-        self.current_duty = self.MIN_DUTY
-
-        # Set the duty cycle
-        self.left_motor.ChangeDutyCycle(self.current_duty)
-        self.right_motor.ChangeDutyCycle(self.current_duty)
-
-    # ### MAY BE DEPRECIATED ###
     # Used for automation to set desired speed: Expects int in range: 0-3
     def set_speed(self, speed=0):
         if speed == 3:
@@ -192,12 +184,3 @@ class MotorControl:
             self.current_duty = self.MIN_DUTY
         else:
             self.current_duty = 0
-
-        # If in standby mode and at least one motor duty cycle is above zero, activate motor controller
-        if not self.motor_state:  # Motors disabled when not active
-            # Stby: Allow H-bridges to work when high
-            # (has a pull down resistor must be actively pulled HIGH)
-            self.toggle_motor()
-
-        self.left_motor.ChangeDutyCycle(self.current_duty)
-        self.right_motor.ChangeDutyCycle(self.current_duty)
