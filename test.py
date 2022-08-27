@@ -5,8 +5,6 @@ import time
 if __name__ == '__main__':  # Program start from here
     # code
     turn_deg = 15
-    outer_lane_deg = 20
-    inner_lane_deg = 30
     try:
         motor_ctl = motor.MotorControl()
         lane = ld.LaneDetect()
@@ -46,37 +44,30 @@ if __name__ == '__main__':  # Program start from here
                     print("Turn Right")
                 elif lane_curve[3] > lane_curve[2]:
                     motor_ctl.set_speed(1)
-                    motor_ctl.turn_left()
-                    print("Turn Left")
+                    motor_ctl.turn_right()
+                    print("Turn Right")
                 else:
+                    # continue
                     motor_ctl.set_speed(1)
                     motor_ctl.turn_right()
                     print("Turn Right")
             else:
                 if lane_curve[4] != 0:
                     if lane_curve[4] > 1:
-                        if lane_curve[3] > inner_lane_deg:
+                        if lane_curve[3] > turn_deg:
                             motor_ctl.set_speed(1)
                             motor_ctl.turn_right()
                             print("Turn Right")
-                            # else:
-                            #     motor_ctl.set_speed(1)
-                            #     motor_ctl.turn_left()
-                            #     print("Turn Left")
                         else:
                             motor_ctl.set_speed(0)
                             motor_ctl.turn_left()
                             motor_ctl.stop()
                             print("Rotate Left")
                     elif lane_curve[4] < -1:
-                        if lane_curve[2] > outer_lane_deg:
+                        if lane_curve[2] > turn_deg:
                             motor_ctl.set_speed(1)
                             motor_ctl.turn_left()
                             print("Turn Left")
-                            # else:
-                            #     motor_ctl.set_speed(1)
-                            #     motor_ctl.turn_right()
-                            #     print("Turn Right")
                         else:
                             motor_ctl.set_speed(0)
                             motor_ctl.turn_right()
@@ -92,6 +83,6 @@ if __name__ == '__main__':  # Program start from here
                     motor_ctl.set_speed(1)
                     motor_ctl.forward()
 
-            lane.display(lane_curve[2], lane_curve[3], lane_curve[4], display=True)
+            lane.display(lane_curve[2], lane_curve[3], lane_curve[4])
     finally:
         motor.destroy()
