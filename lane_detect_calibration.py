@@ -146,7 +146,7 @@ if __name__ == '__main__':  # Program start from here
         # Draw FPS counter
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
         timer = cv2.getTickCount()
-        cv2.putText(img_result, 'FPS ' + str(int(fps)), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3);
+        cv2.putText(img_result, 'FPS ' + str(int(fps)), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
 
         # Draw warp points
         img = draw_points(lane.img, warp_points)  # Draw warp points

@@ -17,8 +17,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms, models # add models to the list
-from torchvision.utils import make_grid
+# from torchvision import transforms
+# from torchvision.utils import make_grid
 import os
 import time
 
@@ -33,7 +33,7 @@ import motor
 import random
 
 # Root path for train and test data
-root = "/images/lanes/"
+root = "images/lanes/"
 
 
 # Convolutional Neural Network (CNN) class model
@@ -61,11 +61,14 @@ class CNNmodel(nn.Module):
 
 # Controls motors based on curr_input and returns drive state
 def controller_input_handler(curr_input, motor_control: motor):
-    # If the start button is pressed,
-    # Stop the training session: turn off motors and clean GPIO assignments
+    # If the start button is pressed:
+    # Stop the training session and turn off motors
     if curr_input == "START":
-        motor_control.toggle_motor()
+        if motor_control.motor_state is True:
+            motor_control.toggle_motor()
         return False    # Ends the training loop
+
+    # Drive motor using curr_input
     if curr_input == "A":
         motor_control.toggle_motor()
     if curr_input == "UP":
@@ -81,16 +84,23 @@ def controller_input_handler(curr_input, motor_control: motor):
     if curr_input == "RIGHT TRIGGER":
         motor_control.rotate_right()
 
-    return motor_control.get_drive_state_label()
+    drive_label = motor_control.get_drive_state_label()
+
+    # DEBUG OUTPUT
+    if curr_input is not None:
+        print(f'{curr_input}\t--->\t{drive_label}')
+
+    return drive_label
 
 
-# Creates a directory at label_dir path if it does not exist
-def existing_dir(label_dir):
-    if os.path.exists(label_dir):
-        return True
-    else:
-        os.mkdir(label_dir)
-        return False
+# Creates motor state directories if missing
+def data_dir_setup(label_dir, motor_handler: motor):
+    drive_state_list = motor_handler.get_drive_state_label(return_all=True)
+
+    for state in drive_state_list:
+        path = os.path.join(label_dir, state)
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
 
 
 # Collects CNN training data:
@@ -104,57 +114,81 @@ def collect_train_data(test_sample_collection=False):
         "left": 0, "right": 0,
         "rotate_right": 0, "rotate_left": 0
     }
-
     motor_state = True
 
     # If test_sample_collection is enabled (TRUE),
     # ask for user input to determine what percent
     # of sampled data should be saved to the test data set
     if test_sample_collection:
-        sample_percent = int(input("Enter percent of samples to save for testing pool:\n>> "))
-
-    # Initialize train data path
-    save_path = os.path.join(root, 'train')
-    existing_dir(save_path)
+        sample_percent = int(input("\nEnter percent of samples to save for testing pool:\n>> "))
+    else:
+        sample_percent = 0
 
     # Initialize input device
-    input_device = gamepad.Controller
-    input_device.set_controller(3)
-    input_device.set_map()
+    input_device = gamepad.Controller(3)
 
     # Initialize motor controller
-    driver = motor.MotorControl
+    driver = motor.MotorControl()
     driver.set_speed(1)     # Set drive speed to MIN
 
+    # Initialize train/test data path
+    train_save_path = os.path.join(root, 'train')
+    test_save_path = os.path.join(root, 'test')
+    save_path = train_save_path     # Default save path
+    data_dir_setup(train_save_path, driver)
+    data_dir_setup(test_save_path, driver)
+
     # Initialize camera controller
-    camera = eyes.Eyes
-    camera.camera_warp_up()
+    camera = eyes.Eyes()
 
-    start_time = time.time()
+    try:
+        start_time = time.time()
+        milli_sec_counter = time.time_ns()
+        camera.camera_warm_up()
 
-    while motor_state:
-        curr_input = input_device.read_command()
-        motor_state = controller_input_handler(curr_input, driver)
+        while motor_state:
+            curr_input = input_device.read_command()
+            motor_state = controller_input_handler(curr_input, driver)
 
-        if motor_state != "stopped":
-            # If enabled, swap directory path between test and train
-            # based on desired percentage (sample_percent).
-            if test_sample_collection:
-                if random.randrange(0, 100 + 1) < sample_percent:
-                    save_path = os.path.join(root, 'test')
+            if (motor_state != "stopped") \
+                    and (motor_state != "backward") \
+                    and (motor_state is not False):
+
+                # If sampling enabled by user:
+                # swap directory path between test and train
+                # within desired percentage (sample_percent).
+                if test_sample_collection:
+                    if random.randrange(0, 100 + 1) < sample_percent:
+                        save_path = test_save_path
+                    else:
+                        save_path = train_save_path
+
+                # Set image name and path
+                img_name = str(time.time_ns()) + ".png"
+                img_save_path = os.path.join(save_path, motor_state, img_name)
+
+                # Add delay between image captures to avoid data flooding
+                # Save a forward image once every half second (1ms == 1^(6)ns)
+                if motor_state == "forward":
+                    if (time.time_ns() - milli_sec_counter) > 500000000:
+                        camera.get_thresh_img()
+                        camera.save_thresh_img(img_save_path)
+                        drive_state_counter[motor_state] += 1
+                        milli_sec_counter = time.time_ns()
                 else:
-                    save_path = os.path.join(root, 'train')
+                    # Save an image once every quarter second
+                    if (time.time_ns() - milli_sec_counter) > 250000000:
+                        camera.get_thresh_img()
+                        camera.save_thresh_img(img_save_path)
+                        drive_state_counter[motor_state] += 1
+                        milli_sec_counter = time.time_ns()
 
-            # Update threshold camera frame and name
-            camera.get_thresh_img()
-            img_name = str(time.time_ns()) + ".png"
-
-            # Save image to path associated with drive state
-            img_save_path = os.path.join(save_path, motor_state)
-            existing_dir(img_save_path)
-            img_save_path = os.path.join(img_save_path, img_name)
-            camera.save_thresh_img(img_save_path)
-            drive_state_counter[motor_state] += 1
+    except KeyboardInterrupt:
+        print("\nInterrupt detected. Operation stopped.\n")
+    except TypeError as e:
+        print("\nTypeError:", e)
+    except AssertionError as e:
+        print(e)
 
     # Run device destructors
     motor.destroy()
@@ -162,32 +196,35 @@ def collect_train_data(test_sample_collection=False):
     camera.destroy()
 
     # Print elapsed train time
-    print(f'Completed Data Collection.')
-    print(f'\tElapsed Time: {time.time()-start_time/60} minutes')
+    print(f'\nCompleted Data Collection.')
+    print(f'\tElapsed Time: {round(((time.time()-start_time)/60), 2)} minutes')
 
     # Print tally of saved images from session
-    print("\nNew Images:\n")
+    print('\n-----------------')
     for drive_state_lbl, count in drive_state_counter.items():
-        print(drive_state_lbl, count)
+        print(f'{drive_state_lbl}:', count)
+    print('-----------------')
 
 
 if __name__ == '__main__':
     while True:
-        print("Choose:")
+        print("\nLane Detect CNN Menu [0-4]:\n")
         print("[0]: Collect Train Data")
         print("[4]: Exit")
-        curr_input = int(input(">> "))
+        usr_input = int(input("\n>> "))
 
-        # Collect Train Data
-        if curr_input == 0:
-            enable_sampling = input("Enable train data sampling(yes/no)?\n>> ")
-            if enable_sampling.lower() == 'yes':
+        # ### Collect Train Data
+        if usr_input == 0:
+            # Ask user for test data sampling
+            enable_sampling = input("\nEnable train data sampling (y/n)?\n>> ")
+            if enable_sampling.lower() == 'yes' or enable_sampling.lower() == 'y':
                 enable_sampling = True
             else:
                 enable_sampling = False
 
+            # Start train data collection
             collect_train_data(enable_sampling)
 
-        # Exit
-        if curr_input == 4:
+        # ### Exit
+        if usr_input == 4:
             break

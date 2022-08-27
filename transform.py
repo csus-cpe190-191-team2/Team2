@@ -83,10 +83,10 @@ class DataControl:
         np.save("training_data.npy", self.training_data)
         ###or return self.training_data
 
-    def collect_data(self, img, motor, data_set='train'):
+    def collect_data(self, img, drive_state, data_set='train'):
         save_path = os.path.join(LANE_ROOT, data_set)
         self.existing_dir(save_path)
-        save_path = os.path.join(save_path, self.INV_LABELS[motor.drive_state])
+        save_path = os.path.join(save_path, self.INV_LABELS[drive_state])
         if not self.existing_dir(save_path):
             file_name = os.path.join(save_path, '1.png')
             cv2.imwrite(file_name, img)

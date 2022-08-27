@@ -20,6 +20,9 @@ class Eyes:
         self.warp_fn = 'vars/warp_points.txt'
         self.thresh_fn = 'vars/thresh_points.txt'
 
+        # Load camera distortion matrix
+        self.dist_vars = np.load('vars/cam_dist_matrix.npz')
+
         if self.cap.isOpened():
             self.get_points()
 
@@ -27,7 +30,7 @@ class Eyes:
         self.cap.release()
         cv2.destroyAllWindows()
 
-    def get_points(self):  #is get_points disposable?
+    def get_points(self):
         with open(self.warp_fn, 'r') as file:
             warp_points = np.loadtxt(file)
         with open(self.thresh_fn, 'r') as file:
@@ -44,8 +47,7 @@ class Eyes:
             self.img = None
         else:
             # Undistort image
-            dist_vars = np.load('vars/cam_dist_matrix.npz')
-            self.img = cv2.undistort(self.img, dist_vars['mtx'], dist_vars['dist'], None, dist_vars['newcameramtx'])
+            self.img = cv2.undistort(self.img, self.dist_vars['mtx'], self.dist_vars['dist'], None, self.dist_vars['newcameramtx'])
 
     def get_img(self):
         self.cap_img()
@@ -54,7 +56,7 @@ class Eyes:
     def camera_warm_up(self, warm_time=5):
         print("Warming Up Camera...")
         for x in range(warm_time, 0, -1):
-            print(f"{x} seconds remain")
+            print(f"{x} seconds remain...")
             self.get_img()
             time.sleep(1)
         print("Done.")

@@ -63,10 +63,13 @@ class MotorControl:
         self.left_motor.start(0)  # Start PWM
         self.right_motor.start(0)  # Start PWM
 
-    def get_drive_state_label(self):
+    def get_drive_state_label(self, return_all=False):
         states = ["stopped", "forward", "backward", "left",
                   "right", "rotate_right", "rotate_left"]
-        return states[self.drive_state]
+        if return_all:
+            return states
+        else:
+            return states[self.drive_state]
 
     def toggle_auto(self):
         if self.auto:

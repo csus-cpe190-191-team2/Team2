@@ -1,6 +1,8 @@
+"""
 #   This file handles camera input to process and detect
 #   Lane lines, their curvature in degrees, and the
 #   relative center position
+"""
 
 import cv2
 import numpy as np
@@ -329,10 +331,10 @@ class LaneDetect:
 
         if error:
             # DEBUG output
-            print("Curves:", curves)
-            print("Lanes:", lanes)
-            print("Ploty:", ploty)
-            print("Error:", error, '\n')
+            # print("Curves:", curves)
+            # print("Lanes:", lanes)
+            # print("Ploty:", ploty)
+            # print("Error:", error, '\n')
             return leftx, rightx, lanes[0], lanes[1], ploty, error
 
         ploty = np.linspace(0, self.img_warp.shape[0] - 1, self.img_warp.shape[0])
@@ -368,11 +370,11 @@ class LaneDetect:
         center = (car_pos - center)//10
 
         # DEBUG output
-        print("Radian:", left_curverad, '\t', right_curverad)
-        print("Circumference:", left_circum, '\t', right_circum)
-        print("Angle:", left_angle, '\t', right_angle)
-        print("Center:", center)
-        print("Error:", error, '\n')
+        # print("Radian:", left_curverad, '\t', right_curverad)
+        # print("Circumference:", left_circum, '\t', right_circum)
+        # print("Angle:", left_angle, '\t', right_angle)
+        # print("Center:", center)
+        # print("Error:", error, '\n')
 
         return left_curverad, right_curverad, left_angle, right_angle, center, error
 

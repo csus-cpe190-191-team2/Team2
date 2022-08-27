@@ -62,7 +62,7 @@ class Controller:
 
     # Handle controller mapping
     def set_map(self):
-        print("Acquiring map...")
+        print("Acquiring controller map...")
         eightbitdo_mapping = {
             46: "UP",
             32: "DOWN",
