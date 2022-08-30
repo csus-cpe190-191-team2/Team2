@@ -41,24 +41,24 @@ def front():
 class MotorControl:
     def __init__(self):
         self.MAX_DUTY = 100  # Limit max motor speed
-        self.MED_DUTY = 85  # Medium speed
-        self.MIN_DUTY = 70  # Low speed
+        self.MED_DUTY = 70  # Medium speed
+        self.MIN_DUTY = 40  # Low speed
         self.current_duty = 0
-        self.motor_state = False
+        self.motor_state = True
         self.drive_state = 0
         self.auto = False  # Toggles autonomous mode
         self.loop = True  # Toggles main loop
         setup()  # Setup GPIO
 
         # Keep motor controller in standby mode to start
-        GPIO.output(Stby, GPIO.LOW)
+        GPIO.output(Stby, GPIO.HIGH)
 
         # Set motor configuration to spin forwards
         front()
 
         # Initiate PWM
-        self.left_motor = GPIO.PWM(MotorA_PWM, 100)
-        self.right_motor = GPIO.PWM(MotorB_PWM, 100)
+        self.right_motor = GPIO.PWM(MotorA_PWM, 100)
+        self.left_motor = GPIO.PWM(MotorB_PWM, 100)
         self.left_motor.start(0)  # Start PWM
         self.right_motor.start(0)  # Start PWM
 
@@ -90,6 +90,7 @@ class MotorControl:
     # Configure motors to move in a forward direction
     def forward(self):
         if self.motor_state:
+            self.not_zero()
             front()
             self.drive_state = 1
             self.left_motor.ChangeDutyCycle(self.current_duty)
@@ -98,6 +99,7 @@ class MotorControl:
     # Configure motors to move in a backward direction
     def backward(self):
         if self.motor_state:
+            self.not_zero()
             GPIO.output(Motor1A, GPIO.LOW)
             GPIO.output(Motor2A, GPIO.HIGH)
             GPIO.output(Motor1B, GPIO.LOW)
@@ -109,18 +111,20 @@ class MotorControl:
     # Reduce left motor speed to turn left
     def turn_left(self):
         if self.motor_state:
+            self.not_zero()
             front()
             self.drive_state = 3
-            self.left_motor.ChangeDutyCycle(self.MED_DUTY / 2)
-            self.right_motor.ChangeDutyCycle(self.MAX_DUTY)
+            self.left_motor.ChangeDutyCycle(self.current_duty / 2)
+            self.right_motor.ChangeDutyCycle(self.current_duty)
 
     # Reduce right motor speed to turn right
     def turn_right(self):
         if self.motor_state:
+            self.not_zero()
             front()
             self.drive_state = 4
-            self.left_motor.ChangeDutyCycle(self.MAX_DUTY)
-            self.right_motor.ChangeDutyCycle(self.MED_DUTY / 2)
+            self.left_motor.ChangeDutyCycle(self.current_duty)
+            self.right_motor.ChangeDutyCycle(self.current_duty / 2)
 
     # Increase speed of motor
     def speed_up(self):
@@ -150,6 +154,7 @@ class MotorControl:
 
     def rotate_right(self):
         if self.motor_state:
+            self.not_zero()
             GPIO.output(Motor1A, GPIO.LOW)
             GPIO.output(Motor2A, GPIO.HIGH)
             GPIO.output(Motor1B, GPIO.HIGH)
@@ -160,6 +165,7 @@ class MotorControl:
 
     def rotate_left(self):
         if self.motor_state:
+            self.not_zero()
             GPIO.output(Motor1A, GPIO.HIGH)
             GPIO.output(Motor2A, GPIO.LOW)
             GPIO.output(Motor1B, GPIO.LOW)
@@ -180,6 +186,10 @@ class MotorControl:
         # Set the duty cycle
         self.left_motor.ChangeDutyCycle(self.current_duty)
         self.right_motor.ChangeDutyCycle(self.current_duty)
+
+    def not_zero(self):
+        if self.current_duty==0:
+            self.current_duty = self.MIN_DUTY
 
     # ### MAY BE DEPRECIATED ###
     # Used for automation to set desired speed: Expects int in range: 0-3
