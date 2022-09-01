@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-# from torchvision import transforms
+from torchvision import datasets, transforms
 # from torchvision.utils import make_grid
 import os
 import time
@@ -26,14 +26,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import eyes
-import controller as gamepad
-import motor
 
-import random
-
-# Root path for train and test data
-root = "images/lanes/"
+root = 'images/lanes/'  # path for train and test data
+train_losses_fn = 'vars/train_losses.npz'
+train_correct_fn = 'vars/train_correct.npz'
+test_losses_fn = 'vars/test_losses.npz'
+test_correct_fn = 'vars/test_correct.npz'
+saved_model_fn = 'vars/Lane_Detect-CNN-Model.pt'
 
 
 # Convolutional Neural Network (CNN) class model
@@ -59,172 +58,159 @@ class CNNmodel(nn.Module):
         return F.log_softmax(X, dim=1)
 
 
-# Controls motors based on curr_input and returns drive state
-def controller_input_handler(curr_input, motor_control: motor):
-    # If the start button is pressed:
-    # Stop the training session and turn off motors
-    if curr_input == "START":
-        if motor_control.motor_state is True:
-            motor_control.toggle_motor()
-        return False    # Ends the training loop
+# Train the CNNmodel using saved image data
+# collected from collect_train_data()
+def train(train_existing=False):
+    epochs = 3  # Number of training epochs
+    epoch_count = 0     # epoch counter initializer
+    epoch_start = 0     # Start number for epoch counter
+    train_losses = []
+    train_correct = []
 
-    # Drive motor using curr_input
-    if curr_input == "A":
-        motor_control.toggle_motor()
-    if curr_input == "UP":
-        motor_control.forward()
-    if curr_input == "DOWN":
-        motor_control.backward()
-    if curr_input == "LEFT":
-        motor_control.turn_left()
-    if curr_input == "RIGHT":
-        motor_control.turn_right()
-    if curr_input == "LEFT TRIGGER":
-        motor_control.rotate_left()
-    if curr_input == "RIGHT TRIGGER":
-        motor_control.rotate_right()
+    # Determine size of training dataset
+    training_dataset_size = 0
+    lst = os.listdir(os.path.join(root, 'train'))
+    for i in lst:
+        folder_contents = os.listdir(os.path.join(root, 'train', i))
+        training_dataset_size += len(folder_contents)
 
-    drive_label = motor_control.get_drive_state_label()
+    # Create an instance of the CNN model
+    model = CNNmodel(use_gpu=torch.cuda.is_available())
 
-    # DEBUG OUTPUT
-    if curr_input is not None:
-        print(f'{curr_input}\t--->\t{drive_label}')
+    # Enable CUDA if available
+    if model.use_gpu:
+        print("Using CUDA")
+        model = model.cuda()
 
-    return drive_label
+    # Define loss function and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+    # Load saved model data if file exists
+    # AND either train_existing is true
+    # OR previous training did not complete
+    if os.path.exists(saved_model_fn):
+        checkpoint = torch.load(saved_model_fn)
+        epoch = checkpoint['epoch']
+        # if epoch < epochs:
+        #     train_correct = checkpoint['correct']
+        #     epoch_start = epoch
 
-# Creates motor state directories if missing
-def data_dir_setup(label_dir, motor_handler: motor):
-    drive_state_list = motor_handler.get_drive_state_label(return_all=True)
+        if (epoch < epochs) or train_existing:
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            loss = checkpoint['loss']
 
-    for state in drive_state_list:
-        path = os.path.join(label_dir, state)
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
+            if epoch != epochs:
+                train_correct = checkpoint['correct']
+                epoch_start = epoch
 
-
-# Collects CNN training data:
-# User input is read in a loop which controls the motor.
-# The current drive state will be saved to the corresponding folder
-# which can then be used to train the CNNmodel.
-def collect_train_data(test_sample_collection=False):
-    # Initialize movement counter
-    drive_state_counter = {
-        "stopped": 0, "forward": 0, "backward": 0,
-        "left": 0, "right": 0,
-        "rotate_right": 0, "rotate_left": 0
-    }
-    motor_state = True
-
-    # If test_sample_collection is enabled (TRUE),
-    # ask for user input to determine what percent
-    # of sampled data should be saved to the test data set
-    if test_sample_collection:
-        sample_percent = int(input("\nEnter percent of samples to save for testing pool:\n>> "))
+            model.eval()
+            print(f'Saved model loaded from \'{saved_model_fn}\'')
     else:
-        sample_percent = 0
+        print(f'No saved model found at \'{saved_model_fn}\'')
 
-    # Initialize input device
-    input_device = gamepad.Controller(3)
+    # Build data loaders
+    transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),
+        transforms.ToTensor()
+    ])
+    train_data = \
+        datasets.ImageFolder(os.path.join(root, 'train'), transform=transform)
+    train_loader = \
+        DataLoader(train_data, batch_size=10, shuffle=True, pin_memory=model.use_gpu)
 
-    # Initialize motor controller
-    driver = motor.MotorControl()
-    driver.set_speed(1)     # Set drive speed to MIN
-
-    # Initialize train/test data path
-    train_save_path = os.path.join(root, 'train')
-    test_save_path = os.path.join(root, 'test')
-    save_path = train_save_path     # Default save path
-    data_dir_setup(train_save_path, driver)
-    data_dir_setup(test_save_path, driver)
-
-    # Initialize camera controller
-    camera = eyes.Eyes()
+    print("Training started...")
+    start_time = time.time()
 
     try:
-        start_time = time.time()
-        milli_sec_counter = time.time_ns()
-        camera.camera_warm_up()
+        for i in range(epoch_start, epochs):
+            trn_corr = 0    # Reset train correct count
+            epoch_count = i
+            for b, (X_train, y_train) in enumerate(train_loader):
+                b += 1
 
-        while motor_state:
-            curr_input = input_device.read_command()
-            motor_state = controller_input_handler(curr_input, driver)
+                # Limit batches if desired
+                # if b == 2:
+                #     break
 
-            if (motor_state != "stopped") \
-                    and (motor_state != "backward") \
-                    and (motor_state is not False):
+                # Pin tensor to GPU if CUDA is available
+                if model.use_gpu:
+                    X_train = X_train.cuda()
+                    y_train = y_train.cuda()
 
-                # If sampling enabled by user:
-                # swap directory path between test and train
-                # within desired percentage (sample_percent).
-                if test_sample_collection:
-                    if random.randrange(0, 100 + 1) < sample_percent:
-                        save_path = test_save_path
-                    else:
-                        save_path = train_save_path
+                # Apply the model
+                y_pred = model(X_train)
+                loss = criterion(y_pred, y_train)
 
-                # Set image name and path
-                img_name = str(time.time_ns()) + ".png"
-                img_save_path = os.path.join(save_path, motor_state, img_name)
+                # Tally the number of correct predictions
+                predicted = torch.max(y_pred.data, 1)[1]
+                batch_corr = (predicted == y_train).sum()
+                trn_corr += batch_corr
 
-                # Add delay between image captures to avoid data flooding
-                # Save a forward image once every half second (1ms == 1^(6)ns)
-                if motor_state == "forward":
-                    if (time.time_ns() - milli_sec_counter) > 500000000:
-                        camera.get_thresh_img()
-                        camera.save_thresh_img(img_save_path)
-                        drive_state_counter[motor_state] += 1
-                        milli_sec_counter = time.time_ns()
-                else:
-                    # Save an image once every quarter second
-                    if (time.time_ns() - milli_sec_counter) > 250000000:
-                        camera.get_thresh_img()
-                        camera.save_thresh_img(img_save_path)
-                        drive_state_counter[motor_state] += 1
-                        milli_sec_counter = time.time_ns()
+                # Update the Parameters
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-    except KeyboardInterrupt:
-        print("\nInterrupt detected. Operation stopped.\n")
-    except TypeError as e:
-        print("\nTypeError:", e)
-    except AssertionError as e:
-        print(e)
+                # Print interim results
+                if b%10 == 0:
+                    print(f'epoch: {i+1:2}/{epochs}  \
+                            batch: {b:4} [{10*b:6}/{training_dataset_size}]  \
+                            loss: {loss.item():10.8f}  \
+                            accuracy: {trn_corr.item()*100/(10*b):7.3f}%')
 
-    # Run device destructors
-    motor.destroy()
-    input_device.kill_device()
-    camera.destroy()
+            train_losses.append(loss)
+            train_correct.append(trn_corr)
+            print(f'{i + 1} of {epochs} completed')
+            epoch_count = i+1
+    except KeyboardInterrupt as interrupt:
+        print(interrupt)
 
-    # Print elapsed train time
-    print(f'\nCompleted Data Collection.')
-    print(f'\tElapsed Time: {round(((time.time()-start_time)/60), 2)} minutes')
+    print(epoch_count)
 
-    # Print tally of saved images from session
-    print('\n-----------------')
-    for drive_state_lbl, count in drive_state_counter.items():
-        print(f'{drive_state_lbl}:', count)
-    print('-----------------')
+    run_time = (time.time() - start_time)/60
+    print(f'\nDuration: {run_time:.2f} minute(s)')  # print the time elapsed
+
+    # Save trained CNN model plus losses and correct count to disk
+    # np.savez(train_losses_fn, train_losses)
+    # np.savez(train_correct_fn, train_correct)
+    # torch.save(model.state_dict(), saved_model_fn)
+    state = {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch_count,
+        'loss': train_losses,
+        'correct': train_correct
+    }
+    torch.save(state, saved_model_fn)
+    print(f'Model saved to \'{saved_model_fn}\'')
+
 
 
 if __name__ == '__main__':
     while True:
         print("\nLane Detect CNN Menu [0-4]:\n")
-        print("[0]: Collect Train Data")
+        print("[1]: Train the model")
+        print("[2]: Test the model")
+        print("[3]: Evaluate Model Performance")
         print("[4]: Exit")
-        usr_input = int(input("\n>> "))
+        try:
+            usr_input = int(input("\n>> "))
+        except UnicodeDecodeError as e:
+            print('\n', e)
+            usr_input = int(input("\n>> "))
 
-        # ### Collect Train Data
-        if usr_input == 0:
-            # Ask user for test data sampling
-            enable_sampling = input("\nEnable train data sampling (y/n)?\n>> ")
-            if enable_sampling.lower() == 'yes' or enable_sampling.lower() == 'y':
-                enable_sampling = True
+        # ### Train CNN model
+        if usr_input == 1:
+            print("\nTrain on saved model? (y/n)")
+            usr_input = input("\n>> ")
+            if usr_input == 'yes' or usr_input == 'y':
+                usr_input = True
             else:
-                enable_sampling = False
-
-            # Start train data collection
-            collect_train_data(enable_sampling)
+                usr_input = False
+            train(train_existing=usr_input)
 
         # ### Exit
-        if usr_input == 4:
+        else:
             break
