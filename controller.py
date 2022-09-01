@@ -96,14 +96,14 @@ class Controller:
             18: "DOWN",
             15: "LEFT",
             17: "RIGHT",
-            306: "A",
-            305: "X",
+            305: "A",
+            309: "X",
             308: "Y",
-            307: "B",
-            313: "SELECT",
-            314: "START",
-            309: "LEFT TRIGGER",
-            310: "RIGHT TRIGGER"
+            306: "B",
+            315: "SELECT",
+            316: "START",
+            311: "LEFT TRIGGER",
+            312: "RIGHT TRIGGER"
         }
         if "Keyboard &" in self.device_name:
             self.map = keyboard_mapping
