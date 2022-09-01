@@ -144,22 +144,42 @@ class NeuralNet(nn.Module):
 
         return acc, loss
 
+    def save_model(self, path):
+        torch.save(self.state_dict(), path)
 
-def setup_net():
+    def predict(self, img):
+        input = torch.Tensor(img).view(-1, 1, 240, 480).to(get_device())
+        output = self(input)
+        print(output)
+        prediction = torch.argmax(output)
+        #print(prediction)
+        print(f'Prediction is {tf.DataControl.INV_CD_LABELS[prediction.item()]}')
+
+def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
-    net = NeuralNet().to(device)
-    net._to_device = device
-    MODEL_NAME = f"model-{int(time.time())}"
-    net._model_name = MODEL_NAME
+    return device
+
+def get_name():
+    return f"model-{int(time.time())}"
+
+def setup_net():  #only for creating new models
+    net = NeuralNet().to(get_device())
+    net._to_device = get_device()
+    net._model_name = get_name()
     return net
 
 def tensors_exist(net, name_x, name_y):
     if not os.path.exists(name_y):
         net.save_tensors(name_x, name_y)
 
+def load_model(path):
+    if os.path.exists(path):
+        return torch.load(path)
+    else:
+        print('Model does not exist')
 
 if __name__ == '__main__':
     net = setup_net()
@@ -175,7 +195,9 @@ if __name__ == '__main__':
     test_X, test_y = net.test_xy(X,y)    #returns other part of tensor
     print(len(train_X), len(test_X))
 
-    net.train(train_X, train_y, test_X, test_y, to_test=True)
+    net.train(train_X, train_y, test_X, test_y, EPOCHS=5,to_test=True)
+
+    net.save_model('../catdognet.pt')
 
     #net.test_acc(test_X, test_y)
 

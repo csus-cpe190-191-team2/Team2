@@ -90,6 +90,10 @@ class Eyes:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.destroy()
 
+def load_img(path):
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (480, 240))
+    return img
 
 if __name__ == '__main__':
     eye = Eyes()

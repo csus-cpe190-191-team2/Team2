@@ -52,10 +52,11 @@ class DataControl:
     Rleftcnt = 0
 
     # IMG_SIZE = 50
-    CATS = "../catsvdogs/PetImages/Cat"
-    DOGS = "../catsvdogs/PetImages/Dog"
-    TESTING = "../catsvdogs/PetImages/Testing"
+    CATS = "../catsvdogs/Cat" #"../catsvdogs/PetImages/Cat"
+    DOGS = "../catsvdogs/Dog" #"../catsvdogs/PetImages/Dog"
+    TESTING = "../catsvdogs/Testing" #"../catsvdogs/PetImages/Testing"
     CD_LABELS = {CATS: 0, DOGS: 1}
+    INV_CD_LABELS = {0: 'cat', 1: 'dog'}
 
     catcount = 0
     dogcount = 0
