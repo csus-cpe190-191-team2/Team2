@@ -46,7 +46,7 @@ class CNNmodel(nn.Module):
         # After two max pooling kernel=2, stride=2:
         # 480=(((480-2+1)/2)-2+1)/2 = 119.25, 240=(((240-2+1)/2)-2+1)/2 = 59.25
         self.fc1 = nn.Linear(119 * 59 * 16, 112)
-        self.fc2 = nn.Linear(112, 3)    # left, right, forward
+        self.fc2 = nn.Linear(112, 5)    # left, right, forward, rotate right, rotate left
 
     def forward(self, X):
         X = F.max_pool2d(F.relu(self.conv1(X)), 2, 2)
