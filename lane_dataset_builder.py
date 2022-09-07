@@ -128,7 +128,7 @@ def collect_train_data(test_sample_collection=False):
                         milli_sec_counter = time.time_ns()
                 else:
                     # Save an image once every quarter second
-                    if (time.time_ns() - milli_sec_counter) > 250000000:
+                    if (time.time_ns() - milli_sec_counter) > 100000000:
                         camera.get_thresh_img()
                         data_dir_check(img_path)
                         camera.save_thresh_img(img_save_path)
