@@ -102,7 +102,7 @@ class DriveDetection:
 
         with torch.no_grad():
             new_pred = self.model(img)
-            prob = nn.functional.softmax(new_pred, dim=1)
+            prob = F.softmax(new_pred, dim=1)
             conf, classes = torch.max(prob, 1)
 
         return get_label(classes.item()), conf.item()
