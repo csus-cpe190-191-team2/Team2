@@ -13,6 +13,7 @@
 #   and associated string key value
 """
 
+import PIL.Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,7 +24,6 @@ import os
 import time
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 
@@ -57,6 +57,57 @@ class CNNmodel(nn.Module):
         return F.log_softmax(X, dim=1)
 
 
+# Autonomous driving inference class:
+# Loads a saved and trained CNNmodel and
+# predicts motor direction based on input image
+class DriveDetection:
+    def __init__(self):
+        if not os.path.exists(saved_model_fn):
+            print(f'\n \033[91m Error: No saved model found at \'{saved_model_fn}\' \033[37m \n')
+        else:
+            # Create an instance of the CNN model
+            self.model = CNNmodel(use_gpu=torch.cuda.is_available())
+            self.img_transform = transforms.Compose([
+                transforms.Grayscale(num_output_channels=1),
+                transforms.ToTensor()
+            ])
+
+            # Enable CUDA if available
+            if self.model.use_gpu:
+                print("Using CUDA")
+                device = torch.device('cuda')
+                self.model = self.model.cuda()
+            else:
+                print("Using CPU")
+                device = torch.device('cpu')
+
+            # Load saved model from disk
+            checkpoint = torch.load(saved_model_fn, map_location=device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.eval()
+            print(f'CNN model loaded from \'{saved_model_fn}\'')
+
+    # Preprocess image into a tensor object
+    def preprocess_img(self, img):
+        img = PIL.Image.fromarray(img)
+        img = self.img_transform(img)
+        if self.model.use_gpu:
+            img = img.cuda()
+            img = img.unsqueeze(0)
+
+        return img
+
+    def drive_predict(self, img):
+        img = self.preprocess_img(img)
+
+        with torch.no_grad():
+            new_pred = self.model(img)
+            prob = nn.functional.softmax(new_pred, dim=1)
+            conf, classes = torch.max(prob, 1)
+
+        return get_label(classes.item()), conf.item()
+
+
 # Train the CNNmodel using saved image data
 # collected from lane_dataset_builder.py
 def train(train_existing=False, graph_data=False):
@@ -75,6 +126,9 @@ def train(train_existing=False, graph_data=False):
     if model.use_gpu:
         print("Using CUDA")
         model = model.cuda()
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -83,7 +137,7 @@ def train(train_existing=False, graph_data=False):
     # Load saved model data if file exists.
     # Also checks for train model resuming and loading
     if os.path.exists(saved_model_fn):
-        checkpoint = torch.load(saved_model_fn)
+        checkpoint = torch.load(saved_model_fn, map_location=device)
         epoch = checkpoint['epoch']
         if (epoch < epochs) or train_existing:
             model.load_state_dict(checkpoint['model_state_dict'])
@@ -91,9 +145,9 @@ def train(train_existing=False, graph_data=False):
             loss = checkpoint['loss']
             # If earlier training was cancelled: resume
             if epoch < epochs:
+                print(f"Resuming incomplete training from epoch {epoch+1}")
                 train_correct = checkpoint['correct']
                 epoch_start = epoch
-
             model.eval()
             print(f'Saved model loaded from \'{saved_model_fn}\'')
     else:
@@ -146,9 +200,9 @@ def train(train_existing=False, graph_data=False):
                 # Print interim results
                 if b%10 == 0:
                     print(f'epoch: {i+1:2}/{epochs}  \
-                            batch: {b:4} [{10*b:6}/{len(train_data)}]  \
-                            loss: {loss.item():10.8f}  \
-                            accuracy: {trn_corr.item()*100/(10*b):7.3f}%')
+                        batch: {b:4} [{10*b:6}/{len(train_data)}]  \
+                        loss: {loss.item():10.8f}  \
+                        accuracy: {trn_corr.item()*100/(10*b):7.3f}%')
 
             train_losses.append(loss)
             train_correct.append(trn_corr)
@@ -216,16 +270,14 @@ def train(train_existing=False, graph_data=False):
         axs[0].set_ylim(ymin=0)
         axs[0].set_xlim(xmin=0)
         axs[0].legend()
-        axs[0].autoscale()
 
         axs[1].plot([t / 500 for t in train_correct], label='training accuracy')
         axs[1].plot([t / 100 for t in test_correct], label='validation accuracy')
         axs[1].set_title('Accuracy at the end of each epoch')
         axs[1].set(xlabel='Epochs', ylabel='% Accuracy')
-        axs[1].set_ylim(ymin=0)
+        axs[1].set_ylim(ymin=0, ymax=1)
         axs[1].set_xlim(xmin=0)
         axs[1].legend()
-        axs[1].autoscale()
 
         plt.subplots_adjust(hspace=0.8)
         plt.show()
@@ -239,6 +291,9 @@ def test(view_misses=False):
     if model.use_gpu:
         print("Using CUDA")
         model = model.cuda()
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     # If no trained model exists: train a new one
     if not os.path.exists(saved_model_fn):
@@ -247,7 +302,7 @@ def test(view_misses=False):
         train()
 
     # Load saved model from disk
-    checkpoint = torch.load(saved_model_fn)
+    checkpoint = torch.load(saved_model_fn, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     print(f'Saved model loaded from \'{saved_model_fn}\'')
@@ -332,7 +387,8 @@ if __name__ == '__main__':
         print("\nLane Detect CNN Menu [0-3]:\n")
         print("[1]: Train the model")
         print("[2]: Test the model")
-        print("[3]: Exit")
+        print("[3]: Quick Test")    # DEBUG
+        print("[4]: Exit")
 
         try:
             usr_input = int(input("\n>> "))
@@ -346,5 +402,13 @@ if __name__ == '__main__':
             train(train_existing=False, graph_data=True)
         elif usr_input == 2:    # ### Train CNN model
             test(view_misses=True)
+        elif usr_input == 3:    # DEBUG QUICK TEST
+            import eyes         # DEBUG IMPORT
+            lane_model = DriveDetection()
+            cam = eyes.Eyes()
+            cam.camera_warm_up()
+            frame = cam.get_thresh_img()
+            print('\n', lane_model.drive_predict(frame))
+            cam.destroy()
         else:                   # ### Exit
             break
