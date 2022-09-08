@@ -61,9 +61,9 @@ class LaneDetect:
         self.error = 0
 
         # Saved variable paths
-        self.warp_fn = 'vars/warp_points.txt'
-        self.thresh_fn = 'vars/thresh_points.txt'
-        self.hough_fn = 'vars/hough_points.txt'
+        self.warp_fn = '../vars/warp_points.txt'
+        self.thresh_fn = '../vars/thresh_points.txt'
+        self.hough_fn = '../vars/hough_points.txt'
 
         if self.cap.isOpened():
             self.get_points()
@@ -89,7 +89,7 @@ class LaneDetect:
             self.error = 1
         else:
             # Undistort image
-            dist_vars = np.load('vars/cam_dist_matrix.npz')
+            dist_vars = np.load('../vars/cam_dist_matrix.npz')
             self.img = cv2.undistort(self.img, dist_vars['mtx'], dist_vars['dist'], None, dist_vars['newcameramtx'])
 
         if display:
