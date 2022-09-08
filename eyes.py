@@ -17,11 +17,11 @@ class Eyes:
         self.img_warp_inv = []
 
         # Saved variable paths
-        self.warp_fn = 'vars/warp_points.txt'
-        self.thresh_fn = 'vars/thresh_points.txt'
+        self.warp_fn = '../vars/warp_points.txt'
+        self.thresh_fn = '../vars/thresh_points.txt'
 
         # Load camera distortion matrix
-        self.dist_vars = np.load('vars/cam_dist_matrix.npz')
+        self.dist_vars = np.load('../vars/cam_dist_matrix.npz')
 
         if self.cap.isOpened():
             self.get_points()
