@@ -3,8 +3,8 @@ import numpy as np
 import lane_detect as ld
 
 # Saved variable paths
-warp_fn = 'vars/warp_points.txt'
-thresh_fn = 'vars/thresh_points.txt'
+warp_fn = '../vars/warp_points.txt'
+thresh_fn = '../vars/thresh_points.txt'
 timer = 0   # FPS timer
 
 

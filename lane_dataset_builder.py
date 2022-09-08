@@ -9,7 +9,7 @@ import random
 
 
 # Root path for train and test data
-root = "images/lanes/"
+root = "../images/lanes/"
 
 
 # Controls motors based on curr_input and returns drive state
