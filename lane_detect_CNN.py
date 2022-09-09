@@ -171,11 +171,17 @@ def train(train_existing=False, graph_data=False):
     print("Training started...")
     start_time = time.time()
     try:
+        # OPTIONAL: LIMITS on num of batches
+        max_trn_batch = 800  # batch 10 images --> 8000 images
+        max_tst_batch = 300  # 3000 max images
         for i in range(epoch_start, epochs):
             trn_corr = 0    # Reset train correct count
             tst_corr = 0    # Reset test correct count
             epoch_count = i
             for b, (X_train, y_train) in enumerate(train_loader):
+                # OPTIONAL: Limit the number of batches
+                # if b == max_trn_batch:
+                #     break
                 b += 1
 
                 # Pin tensor to GPU if CUDA is available
@@ -198,7 +204,7 @@ def train(train_existing=False, graph_data=False):
                 optimizer.step()
 
                 # Print interim results
-                if b%10 == 0:
+                if b%25 == 0:
                     print(f'epoch: {i+1:2}/{epochs}  \
                         batch: {b:4} [{10*b:6}/{len(train_data)}]  \
                         loss: {loss.item():10.8f}  \
@@ -271,11 +277,11 @@ def train(train_existing=False, graph_data=False):
         axs[0].set_xlim(xmin=0)
         axs[0].legend()
 
-        axs[1].plot([t / 500 for t in train_correct], label='training accuracy')
-        axs[1].plot([t / 100 for t in test_correct], label='validation accuracy')
+        axs[1].plot([t / (len(train_data)//10) for t in train_correct], label='training accuracy')
+        axs[1].plot([t / (len(test_data)//10) for t in test_correct], label='validation accuracy')
         axs[1].set_title('Accuracy at the end of each epoch')
         axs[1].set(xlabel='Epochs', ylabel='% Accuracy')
-        axs[1].set_ylim(ymin=0, ymax=1)
+        axs[1].set_ylim(ymin=0)
         axs[1].set_xlim(xmin=0)
         axs[1].legend()
 
@@ -315,7 +321,7 @@ def test(view_misses=False):
     test_data = \
         datasets.ImageFolder(os.path.join(root, 'test'), transform=transform)
     test_loader = \
-        DataLoader(test_data, batch_size=10000, shuffle=True, pin_memory=model.use_gpu)
+        DataLoader(test_data, batch_size=345, shuffle=True, pin_memory=model.use_gpu)
 
     # Run the testing batches
     print("Starting test batches...")
