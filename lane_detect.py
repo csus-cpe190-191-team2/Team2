@@ -63,7 +63,6 @@ class LaneDetect:
         # Saved variable paths
         self.warp_fn = 'vars/warp_points.txt'
         self.thresh_fn = 'vars/thresh_points.txt'
-        self.hough_fn = 'vars/hough_points.txt'
 
         if self.cap.isOpened():
             self.get_points()
@@ -114,12 +113,9 @@ class LaneDetect:
             warp_points = np.loadtxt(file)
         with open(self.thresh_fn, 'r') as file:
             thresh_points = np.loadtxt(file, dtype=int)
-        with open(self.hough_fn, 'r') as file:
-            hough_points = np.loadtxt(file, dtype=int)
-
+       
         self.points = np.array([{'warp_points': warp_points,
-                                 'thresh_points': thresh_points,
-                                 'hough_points': hough_points}])
+                                 'thresh_points': thresh_points}])
 
     def warp_image(self, img_in=None, inv=False):
         pts1 = np.float32(self.points[0]['warp_points'])
