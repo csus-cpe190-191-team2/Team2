@@ -22,7 +22,7 @@ def parse_command(motor, command):
         if command == "RIGHT":
             motor.turn_right()  # turn right
         if command == "A":
-            motor.default_duty() #default speed
+            motor.set_speed(1) #default speed
         if command == "X":
             motor.toggle_motor()  # turn on/off
         if command == "Y":
@@ -30,17 +30,19 @@ def parse_command(motor, command):
         if command == "B":
             motor.speed_down() #decrease speed
         if command == "SELECT":
-            motor.toggle_auto()  # switch modes
+            motor.toggle_auto()  # Switch modes
+            motor.set_speed(1)   # Default speed
         if command == "START":
             motor.loop = False  # stop program
-        if command == "Ltrigger":
+        if command == "LEFT TRIGGER":
             motor.rotate_left()  # rotate left
-        if command == "Rtrigger":
+        if command == "RIGHT TRIGGER":
             motor.rotate_right()  # rotate right
 
 
 if __name__ == '__main__':
     print("Getting ready for takeoff...")
+    stop_dist = 8   # Stopping distance in cm
     auto_motor = cnn.DriveDetection()
     #img_detect = cnn.ObjectDetection()
     eye = E.Eyes()
@@ -51,32 +53,35 @@ if __name__ == '__main__':
         while driver.loop:
             #check input no matter what
             command = controller.read_command()
-            if not command is None:
+            if command is not None:
                 print(command)
-            parse_command(driver,command)
-            #check for obstruction
-            if dist.distance() < 8.0:
-                print("OBSTRUCTION DETECTED")
-                if driver.motor_state:
+            parse_command(driver, command)
+
+            # Check for obstruction
+            if dist.distance() < stop_dist:
+                print("OBSTRUCTION DETECTED")   # DEBUG output
+                if driver.drive_state:
                     driver.toggle_motor()
+                while dist.distance() < stop_dist:
+                    continue
+                print("Continuing...")  # DEBUG output
+                driver.toggle_motor()
             else:
-                if not driver.motor_state:
-                    driver.toggle_motor()
-            #if in auto then let cnn predict
-            if driver.auto:
-                img = eye.get_thresh_img()
-                motor_pred, cert = auto_motor.drive_predict(img)
-                print(motor_pred[1])
-                if motor_pred[1] == 'forward':
-                    driver.forward()
-                if motor_pred[1] == 'left':
-                    driver.turn_left()
-                if motor_pred[1] == 'right':
-                    driver.turn_right()
-                if motor_pred[1] == 'rotate_left':
-                    driver.rotate_left()
-                if motor_pred[1] == 'rotate_right':
-                    driver.rotate_right()
+                # If in auto then let cnn predict
+                if driver.auto:
+                    img = eye.get_thresh_img()
+                    motor_pred, cert = auto_motor.drive_predict(img)
+                    print(motor_pred[1])
+                    if motor_pred[1] == 'forward':
+                        driver.forward()
+                    if motor_pred[1] == 'left':
+                        driver.turn_left()
+                    if motor_pred[1] == 'right':
+                        driver.turn_right()
+                    if motor_pred[1] == 'rotate_left':
+                        driver.rotate_left()
+                    if motor_pred[1] == 'rotate_right':
+                        driver.rotate_right()
     except Exception as e:
         print(e)
     finally:
