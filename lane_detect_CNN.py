@@ -101,12 +101,11 @@ class DriveDetection:
         img = self.preprocess_img(img)
 
         with torch.no_grad():
-            new_pred = self.model(img)
+            new_pred = self.model(img.view(1,1,240,480))
             prob = F.softmax(new_pred, dim=1)
             conf, classes = torch.max(prob, 1)
 
         return get_label(classes.item()), conf.item()
-
 
 # Train the CNNmodel using saved image data
 # collected from lane_dataset_builder.py
