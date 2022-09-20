@@ -376,14 +376,13 @@ def test(view_misses=False):
         plt.show()
 
 
-def get_label(item_index, dataset_type='train'):
-    transform = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor()
-    ])
-    data = \
-        datasets.ImageFolder(os.path.join(root, dataset_type), transform=transform)
-    class_names = list(enumerate(data.classes))
+def get_label(item_index):
+    class_names = [
+        (0, 'forward'),
+        (1, 'left'),
+        (2, 'right'),
+        (3, 'rotate_left'),
+        (4, 'rotate_right')]
     return class_names[item_index]
 
 
