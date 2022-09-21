@@ -1,98 +1,109 @@
-import controller
-import motor
-import os
-import lane_detect as ld
+import lane_detect_CNN as cnn
+import motor as m
+import eyes as E
+import ultrasonic_distance as dist
+import controller as c
 
-if __name__ == '__main__':  # Program start from here
-    # code
-    lane = ld.LaneDetect()
-    auto = False
+
+def parse_command(motor, command):
+    if motor.auto:  # cnn is controlling:
+        if command == "X":
+            motor.toggle_motor()  # turn on/off
+        if command == "SELECT":
+            motor.toggle_auto()  # switch modes
+        if command == "START":
+            motor.loop = False  # stop program
+    else:   # Manual control
+        if command == "UP":
+            motor.forward()  # go forward
+        if command == "DOWN":
+            motor.backward()  # go backward
+        if command == "LEFT":
+            motor.turn_left()  # turn left
+        if command == "RIGHT":
+            motor.turn_right()  # turn right
+        if command == "A":
+            motor.set_speed(1) #default speed
+        if command == "X":
+            motor.toggle_motor()  # turn on/off
+        if command == "Y":
+            motor.speed_up()  # increase speed
+        if command == "B":
+            motor.speed_down() #decrease speed
+        if command == "SELECT":
+            motor.toggle_auto()  # Switch modes
+            motor.set_speed(1)   # Default speed
+        if command == "START":
+            motor.loop = False  # stop program
+        if command == "LEFT TRIGGER":
+            motor.rotate_left()  # rotate left
+        if command == "RIGHT TRIGGER":
+            motor.rotate_right()  # rotate right
+
+
+if __name__ == '__main__':
+    stop_dist = 8   # Stopping distance in cm
     try:
-        print("Configuring Keyboard Controller Input...")
-        # Select current input device based on what is connected
-        print("bbb")
-        inputDev = controller.Input()
-        print("test")
-        # If input device is connected begin listening for input
-        if inputDev.gamepad is not None:
-            inputDev.input_listen()#change name of function
-            try:
-                for event in inputDev.gamepad.read_loop():
-                    # print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)# DEBUG
-                    if event.value == 1 or event.value == -1:    # 1 means button is pressed, 0 is released
-                        if event.value == -1:
-                            print(event.code+event.value)
-                            curr_input = inputDev.button_map.get(event.code+event.value)
-                        else:
-                            curr_input = inputDev.button_map.get(event.code+event.value)
-                        # print("Event Type: ", event.type, "\tEvent Code: ", event.code, '\tEvent Value: ', event.value)# DEBUG
-                        print(curr_input)    # Temp output for DEBUG
-                        if curr_input == "UP":
-                            inputDev.motor_control.forward()
-                        if curr_input == "DOWN":
-                            inputDev.motor_control.backward()
-                        if curr_input == "LEFT":
-                            inputDev.motor_control.turn_left()
-                        if curr_input == "RIGHT":
-                            inputDev.motor_control.turn_right()
-                        if curr_input == "A":
-                            inputDev.motor_control.speed_up()
-                        if curr_input == "X":
-                            inputDev.motor_control.speed_down()
-                        if curr_input == "Y":
-                            inputDev.motor_control.stop()
-                        if curr_input == "B":
-                            print("No Function Yet...")
-                            #  Do something?
-                        if curr_input == "SELECT":
-                            auto = not auto
-                            print("Auto: ", auto)
-                        # Exit manual mode if START button is pressed
-                        if curr_input == "START":
-                            inputDev.motor_control.stop()
-                            inputDev.gamepad.close()
-                            quit()
-                        if curr_input == "Ltrigger":
-                            print("No Function Yet...")
-                            #  Do something?
-                        if curr_input == "Rtrigger":
-                            print("No Function Yet...")
-                            #  Do something?
+        with open('vars/eva_ascii') as f:
+            print(f.read())
+        print("Getting ready for takeoff...")
+        auto_motor = cnn.DriveDetection()
+        eye = E.Eyes()
+        driver = m.MotorControl()
+        controller = c.Controller()
+        print("Initialized!")
+        while driver.loop:
+            #check input no matter what
+            command = controller.read_command()
+            parse_command(driver, command)
+            if command is not None:
+                if command == 'SELECT':
+                    print(command, '--->', f'Self Driving: {driver.auto}')
+                elif command == 'START':
+                    print("Exiting...")
+                elif (command == 'Y' or command == 'B' or command == 'A') and driver.drive_state:
+                    if command == 'Y':
+                        print(command, '--->', f'Speed UP: {driver.current_duty}')
+                    elif command == 'B':
+                        print(command, '--->', f'Speed DOWN: {driver.current_duty}')
+                    else:
+                        print(command, '--->', f'Speed DEFAULT: {driver.current_duty}')
+                else:
+                    print(command, '--->', driver.get_drive_state_label())
 
-                        # Temp DEBUG output
-                        print("Left: ", inputDev.motor_control.left_duty, "\tRight: ", inputDev.motor_control.right_duty)
-
-                        if auto:
-                            lane_curve = lane.get_curve()
-                            print(lane_curve)
-                            if lane_curve[2] > lane_curve[3]:
-                                if lane_curve[2] > 20:
-                                    inputDev.motor_control.turn_left()
-                                    print("Turn Left")
-                            elif lane_curve[3] > 20:
-                                inputDev.motor_control.turn_right()
-                                print("Turn Right")
-                            else:
-                                print("Move forward")
-                                inputDev.motor_control.forward()
-                                inputDev.motor_control.set_speed(3)
-                            # lane.display()
-
-
-            except OSError as e:
-                print("Controller Disconnected: ", e)
-                # Stop Motors
-            except AttributeError as e:
-                print("Button map configuration error: ", e)
-            finally:
-                motor.destroy()
-                inputDev.gamepad.close()
-
-    except KeyboardInterrupt:   # potentially unneeded exception handle
-        print("Keyboard")
-        # destroy()  # Will be useful cleanup function for later exception handling
-
+            # Check for obstruction
+            if dist.distance() < stop_dist:
+                print("OBSTRUCTION DETECTED")   # DEBUG output
+                if driver.drive_state:
+                    driver.toggle_motor()
+                while dist.distance() < stop_dist:
+                    continue
+                print("Continuing...")  # DEBUG output
+                driver.toggle_motor()
+            else:
+                # If in auto then let cnn predict
+                if driver.auto:
+                    img = eye.get_thresh_img()
+                    motor_pred, cert = auto_motor.drive_predict(img)
+                    print(motor_pred[1])
+                    if motor_pred[1] == 'forward':
+                        driver.forward()
+                    if motor_pred[1] == 'left':
+                        driver.turn_left()
+                    if motor_pred[1] == 'right':
+                        driver.turn_right()
+                    if motor_pred[1] == 'rotate_left':
+                        driver.rotate_left()
+                    if motor_pred[1] == 'rotate_right':
+                        driver.rotate_right()
+    except Exception as e:
+        print(e)
     finally:
-        print("clean up")
-        # GPIO.cleanup()  # clean all gpio
-        os._exit(0)
+        try:
+            eye.destroy()
+            controller.kill_device()
+        except Exception as e:
+            print(e)
+        m.destroy()
+
+
