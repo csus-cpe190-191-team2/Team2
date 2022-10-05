@@ -91,6 +91,21 @@ class MotorControl:
             GPIO.output(Stby, GPIO.HIGH)
             self.motor_state = True
 
+    def motor_off(self):
+        if self.motor_state:
+            self.prev_drive_state = self.drive_state
+            self.drive_state = 0  # set state to "stopped"
+            GPIO.output(Stby, GPIO.LOW)
+            self.motor_state = False
+
+    def motor_on(self):
+        if not self.motor_state:
+            temp_state_holder = self.drive_state
+            self.drive_state = self.prev_drive_state
+            self.prev_drive_state = temp_state_holder
+            GPIO.output(Stby, GPIO.HIGH)
+            self.motor_state = True
+
     def off_duty(self):
         if self.motor_state:
             self.left_motor.ChangeDutyCycle(0)

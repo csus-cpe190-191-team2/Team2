@@ -13,6 +13,8 @@ GPIO_ECHO = 11
 GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(GPIO_ECHO, GPIO.IN)
 
+GPIO.output(GPIO_TRIGGER, False)
+
 
 def distance():
     # set Trigger to HIGH
@@ -38,6 +40,7 @@ def distance():
     # multiply with the sonic speed (34300 cm/s)
     # and divide by 2, because there and back
     distance = (TimeElapsed * 34300) / 2
+    distance = round(distance, 2)
 
     return distance
 

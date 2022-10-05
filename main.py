@@ -1,109 +1,178 @@
 import lane_detect_CNN as cnn
 import motor as m
 import eyes as E
-import ultrasonic_distance as dist
 import controller as c
+import ultrasonic_distance as dist
+from threading import Thread, current_thread, Event
+from multiprocessing import current_process
+import time
+import os
+
+stop_dist = 10    # cm
+stop_event = Event()
+drive_auto_event = Event()
 
 
-def parse_command(motor, command):
-    if motor.auto:  # cnn is controlling:
-        if command == "X":
-            motor.toggle_motor()  # turn on/off
-        if command == "SELECT":
-            motor.toggle_auto()  # switch modes
-        if command == "START":
-            motor.loop = False  # stop program
-    else:   # Manual control
-        if command == "UP":
-            motor.forward()  # go forward
-        if command == "DOWN":
-            motor.backward()  # go backward
-        if command == "LEFT":
-            motor.turn_left()  # turn left
-        if command == "RIGHT":
-            motor.turn_right()  # turn right
-        if command == "A":
-            motor.set_speed(1) #default speed
-        if command == "X":
-            motor.toggle_motor()  # turn on/off
-        if command == "Y":
-            motor.speed_up()  # increase speed
-        if command == "B":
-            motor.speed_down() #decrease speed
-        if command == "SELECT":
-            motor.toggle_auto()  # Switch modes
-            motor.set_speed(1)   # Default speed
-        if command == "START":
-            motor.loop = False  # stop program
-        if command == "LEFT TRIGGER":
-            motor.rotate_left()  # rotate left
-        if command == "RIGHT TRIGGER":
-            motor.rotate_right()  # rotate right
+def io_thread(controller: c, driver: m):
+    timeout = 0.285  # ms timeout (range: ~1-300ms)
+    pid = os.getpid()
+    threadName = current_thread().name
+    processName = current_process().name
+    print(f"{pid}/{processName}/{threadName} ---> Starting IO Thread...")
+    last_event = time.time()
+    while not stop_event.is_set():
+        if drive_auto_event.is_set():
+            if (time.time()-last_event) > timeout:
+                command = controller.read_command()
+                if command is not None:
+                    parse_command(driver, command, True)
+                last_event = time.time()
+            else:
+                time.sleep(timeout)
+        else:
+            command = controller.read_command()
+            if command is not None:
+                parse_command(driver, command, True)
+
+    print(f"{pid}/{processName}/{threadName} ---> Finished IO Thread...")
+
+
+def parse_command(driver, command, print_activity=False):
+    # print(command)                # DEBUG
+    if command == "START":          # stop program
+        driver.loop = False
+        stop_event.set()
+        print("Exiting...")
+    elif command == "X":            # Toggle motor
+        driver.toggle_motor()
+        if print_activity:
+            print(command, '--->', driver.get_drive_state_label(),
+                  f'---> Motors: {"On" if driver.motor_state else "Off"}')
+    elif driver.auto:               # CNN is controlling:
+        if command == "SELECT":     # switch driving modes
+            driver.motor_off()
+            driver.toggle_auto()
+            drive_auto_event.clear()
+            if print_activity:
+                print(command, '--->', f'Self Driving: {driver.auto}')
+    else:                               # Manual control
+        if command == "UP":             # go forward
+            driver.forward()
+        if command == "DOWN":           # go backward
+            driver.backward()
+        if command == "LEFT":           # turn left
+            driver.turn_left()
+        if command == "RIGHT":          # turn right
+            driver.turn_right()
+        if command == "A":              # default speed
+            driver.set_speed(1)
+        if command == "Y":              # increase speed
+            driver.speed_up()
+        if command == "B":              # decrease speed
+            driver.speed_down()
+        if command == "LEFT TRIGGER":   # rotate left
+            driver.rotate_left()
+        if command == "RIGHT TRIGGER":  # rotate right
+            driver.rotate_right()
+        if command == "SELECT":         # switch driving modes
+            drive_auto_event.set()
+            driver.motor_on()
+            driver.set_speed(1)         # Default speed
+            driver.toggle_auto()
+
+        if print_activity:
+            if driver.motor_state:
+                if command == 'Y':
+                    print(command, '--->', f'Speed UP: {driver.current_duty}')
+                elif command == 'B':
+                    print(command, '--->', f'Speed DOWN: {driver.current_duty}')
+                elif command == 'A':
+                    print(command, '--->', f'Speed DEFAULT: {driver.current_duty}')
+                else:
+                    print(command, '--->', driver.get_drive_state_label())
+            else:
+                print(command, '--->', driver.get_drive_state_label(),
+                      f'---> Motors: {"On" if driver.motor_state else "Off"}')
+
+
+def auto_drive_handler(driver, command):
+    if command == "forward":        # go forward
+        driver.forward()
+    if command == "left":           # turn left
+        driver.turn_left()
+    if command == "right":          # turn right
+        driver.turn_right()
+    if command == "rotate_left":    # rotate left
+        driver.rotate_left()
+    if command == "rotate_right":   # rotate right
+        driver.rotate_right()
 
 
 if __name__ == '__main__':
-    stop_dist = 8   # Stopping distance in cm
-    try:
+    try:    # Eeeee... va?
         with open('vars/eva_ascii') as f:
             print(f.read())
-        print("Getting ready for takeoff...")
-        auto_motor = cnn.DriveDetection()
-        eye = E.Eyes()
-        driver = m.MotorControl()
-        controller = c.Controller()
-        print("Initialized!")
-        while driver.loop:
-            #check input no matter what
-            command = controller.read_command()
-            parse_command(driver, command)
-            if command is not None:
-                if command == 'SELECT':
-                    print(command, '--->', f'Self Driving: {driver.auto}')
-                elif command == 'START':
-                    print("Exiting...")
-                elif (command == 'Y' or command == 'B' or command == 'A') and driver.drive_state:
-                    if command == 'Y':
-                        print(command, '--->', f'Speed UP: {driver.current_duty}')
-                    elif command == 'B':
-                        print(command, '--->', f'Speed DOWN: {driver.current_duty}')
-                    else:
-                        print(command, '--->', f'Speed DEFAULT: {driver.current_duty}')
-                else:
-                    print(command, '--->', driver.get_drive_state_label())
+    except Exception as e:
+        print(e)
+    except FileExistsError as e:
+        print("Eee... VA?")
 
-            # Check for obstruction
-            if dist.distance() < stop_dist:
-                print("OBSTRUCTION DETECTED")   # DEBUG output
-                if driver.drive_state:
-                    driver.toggle_motor()
-                while dist.distance() < stop_dist:
-                    continue
-                print("Continuing...")  # DEBUG output
-                driver.toggle_motor()
-            else:
-                # If in auto then let cnn predict
-                if driver.auto:
+    print("Preparing Launch Procedures...")
+    controller = c.Controller(3)
+    driver = m.MotorControl()
+    eye = E.Eyes()
+    auto_motor = cnn.DriveDetection()
+
+    # Start gamepad i/o thread
+    t1_io = Thread(target=io_thread, args=(controller, driver))
+    t1_io.start()
+    pid = os.getpid()
+    threadName = current_thread().name
+    processName = current_process().name
+    print(f"{pid}/{processName}/{threadName} ---> Starting Main...")
+
+    print("Ready For Takeoff!\n")
+    print(f'{"Auto" if driver.auto else "Manual"} Mode',
+          f'---> {driver.get_drive_state_label()}',
+          f'---> Motors: {"On" if driver.motor_state else "Off"}')
+    try:
+        while driver.loop:
+            if driver.auto:
+                obj_dist = dist.distance()
+                if (obj_dist > 0) and (obj_dist < stop_dist):
+                    print(f'OBSTRUCTION DETECTED: {obj_dist:.2f}/{stop_dist}cm')
+                    driver.motor_off()
+                    while obj_dist < stop_dist:
+                        obj_dist = dist.distance()
+                    print("Continuing...")
+                    driver.motor_on()
+                else:
                     img = eye.get_thresh_img()
                     motor_pred, cert = auto_motor.drive_predict(img)
                     print(motor_pred[1])
-                    if motor_pred[1] == 'forward':
-                        driver.forward()
-                    if motor_pred[1] == 'left':
-                        driver.turn_left()
-                    if motor_pred[1] == 'right':
-                        driver.turn_right()
-                    if motor_pred[1] == 'rotate_left':
-                        driver.rotate_left()
-                    if motor_pred[1] == 'rotate_right':
-                        driver.rotate_right()
+                    auto_drive_handler(driver, motor_pred[1])
+
     except Exception as e:
         print(e)
+    except KeyboardInterrupt as e:
+        print(e)
+        print("Shutting Down...")
     finally:
+        if not stop_event.is_set():
+            stop_event.set()
+        t1_io.join()
         try:
-            eye.destroy()
+            m.destroy()
+        except Exception as e:
+            print(e)
+        try:
             controller.kill_device()
         except Exception as e:
             print(e)
-        m.destroy()
+        try:
+            eye.destroy()
+        except Exception as e:
+            print(e)
+        print('Done.')
 
 
