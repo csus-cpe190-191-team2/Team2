@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+from time import sleep
 
 # GPIO Pins for Motor Driver Inputs
 Motor1A = 16  # Green Wire 16
@@ -40,9 +41,9 @@ def front():
 
 class MotorControl:
     def __init__(self):
-        self.MAX_DUTY = 100  # Limit max motor speed
-        self.MED_DUTY = 85  # Medium speed
-        self.MIN_DUTY = 70  # Low speed
+        self.MAX_DUTY = 65  # Limit max motor speed
+        self.MED_DUTY = 50  # Medium speed
+        self.MIN_DUTY = 35  # Low speed
         self.current_duty = 0
         self.motor_state = False
         self.drive_state = 0
@@ -114,6 +115,12 @@ class MotorControl:
     # Configure motors to move in a forward direction
     def forward(self):
         if self.motor_state:
+            # Decelerate if changing direction to avoid back voltage
+            if self.drive_state == 2:
+                for i in range(self.current_duty, -1, -1):
+                    self.left_motor.ChangeDutyCycle(i)
+                    self.right_motor.ChangeDutyCycle(i)
+                    sleep(0.025)
             front()
             self.drive_state = 1
             self.left_motor.ChangeDutyCycle(self.current_duty)
@@ -122,6 +129,12 @@ class MotorControl:
     # Configure motors to move in a backward direction
     def backward(self):
         if self.motor_state:
+            # Decelerate if changing direction to avoid back voltage
+            if self.drive_state == 1:
+                for i in range(self.current_duty, -1, -1):
+                    self.left_motor.ChangeDutyCycle(i)
+                    self.right_motor.ChangeDutyCycle(i)
+                    sleep(0.025)
             GPIO.output(Motor1A, GPIO.LOW)
             GPIO.output(Motor2A, GPIO.HIGH)
             GPIO.output(Motor1B, GPIO.LOW)
@@ -174,6 +187,8 @@ class MotorControl:
 
     def rotate_right(self):
         if self.motor_state:
+            self.left_motor.ChangeDutyCycle(0)
+            self.right_motor.ChangeDutyCycle(0)
             GPIO.output(Motor1A, GPIO.LOW)
             GPIO.output(Motor2A, GPIO.HIGH)
             GPIO.output(Motor1B, GPIO.HIGH)
@@ -184,6 +199,8 @@ class MotorControl:
 
     def rotate_left(self):
         if self.motor_state:
+            self.left_motor.ChangeDutyCycle(0)
+            self.right_motor.ChangeDutyCycle(0)
             GPIO.output(Motor1A, GPIO.HIGH)
             GPIO.output(Motor2A, GPIO.LOW)
             GPIO.output(Motor1B, GPIO.LOW)

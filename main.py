@@ -14,7 +14,7 @@ drive_auto_event = Event()
 
 
 def io_thread(controller: c, driver: m):
-    timeout = 0.285  # ms timeout (range: ~1-300ms)
+    timeout = 0.010  # ms timeout (range: ~1-300ms)
     pid = os.getpid()
     threadName = current_thread().name
     processName = current_process().name
@@ -120,6 +120,7 @@ if __name__ == '__main__':
     print("Preparing Launch Procedures...")
     controller = c.Controller(3)
     driver = m.MotorControl()
+    driver.set_speed(1)
     eye = E.Eyes()
     auto_motor = cnn.DriveDetection()
 
