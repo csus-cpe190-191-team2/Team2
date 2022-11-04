@@ -14,7 +14,7 @@ drive_auto_event = Event()
 
 
 def io_thread(controller: c, driver: m):
-    timeout = 0.010  # ms timeout (range: ~1-300ms)
+    timeout = 0.001  # ms timeout (range: ~1-300ms)
     pid = os.getpid()
     threadName = current_thread().name
     processName = current_process().name
@@ -75,6 +75,7 @@ def parse_command(driver, command, print_activity=False):
         if command == "RIGHT TRIGGER":  # rotate right
             driver.rotate_right()
         if command == "SELECT":         # switch driving modes
+            E.cv2.destroyAllWindows()
             drive_auto_event.set()
             driver.motor_on()
             driver.set_speed(1)         # Default speed
@@ -152,6 +153,11 @@ if __name__ == '__main__':
                     motor_pred, cert = auto_motor.drive_predict(img)
                     print(motor_pred[1])
                     auto_drive_handler(driver, motor_pred[1])
+            else:
+                img = eye.get_img()
+                img_thresh = eye.get_thresh_img(img)
+                img_horiz_stack = E.stack_images(1, ([img, img_thresh]))
+                eye.show_img(img_horiz_stack, "Camera View", 1)
 
     except Exception as e:
         print(e)
@@ -175,5 +181,3 @@ if __name__ == '__main__':
         except Exception as e:
             print(e)
         print('Done.')
-
-

@@ -436,5 +436,6 @@ if __name__ == '__main__':
             frame = cam.get_thresh_img()
             print('\n', lane_model.drive_predict(frame))
             cam.show_img(frame)
+            eyes.cv2.destroyAllWindows()
         else:                   # ### Exit
             break
