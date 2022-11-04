@@ -1,6 +1,6 @@
 """
 #   Convolutional Neural Network (CNN)
-#   meant for predicting and training directional output
+#   for predicting and training directional output
 #   with the goal of driving within a lane.
 #   Class supports training, testing and predicting.
 #
@@ -22,12 +22,14 @@ from torchvision import datasets, transforms
 from torchvision.utils import make_grid
 import os
 import time
+from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 root = 'images/lanes/'  # path for train and test data
+graph_root = 'images/graphs'
 train_losses_fn = 'vars/train_losses.npz'
 train_correct_fn = 'vars/train_correct.npz'
 test_losses_fn = 'vars/test_losses.npz'
@@ -285,6 +287,16 @@ def train(train_existing=False, graph_data=False):
         axs[1].legend()
 
         plt.subplots_adjust(hspace=0.8)
+
+        # Setup filename and save results to disk
+        date_now = datetime.now().strftime("%b-%d-%Y_%H-%M-%S")
+        graph_name = 'train-graph_'+date_now+".png"
+        if not os.path.exists(graph_root):
+            os.mkdir(graph_root)
+        graph_save_path = os.path.join(graph_root, graph_name)
+        print(f'\nSaving results to: {graph_save_path}')
+        plt.savefig(graph_save_path)
+
         plt.show()
 
 
@@ -320,7 +332,7 @@ def test(view_misses=False):
     test_data = \
         datasets.ImageFolder(os.path.join(root, 'test'), transform=transform)
     test_loader = \
-        DataLoader(test_data, batch_size=345, shuffle=True, pin_memory=model.use_gpu)
+        DataLoader(test_data, batch_size=150, shuffle=True, pin_memory=model.use_gpu)
 
     # Run the testing batches
     print("Starting test batches...")
@@ -373,6 +385,16 @@ def test(view_misses=False):
         im = make_grid(images, nrow=rows)
         plt.imshow(np.transpose(im.numpy(), (1, 2, 0)))
         plt.title(label=f'First {rows} misses')
+
+        # Setup filename and save results to disk
+        date_now = datetime.now().strftime("%b-%d-%Y_%H-%M-%S")
+        graph_name = 'test-misses_' + date_now + ".png"
+        if not os.path.exists(graph_root):
+            os.mkdir(graph_root)
+        graph_save_path = os.path.join(graph_root, graph_name)
+        print(f'\nSaving results to: {graph_save_path}')
+        plt.savefig(graph_save_path)
+
         plt.show()
 
 
@@ -388,7 +410,7 @@ def get_label(item_index):
 
 if __name__ == '__main__':
     while True:
-        print("\nLane Detect CNN Menu [0-3]:\n")
+        print("\nLane Detect CNN Menu [1-4]:\n")
         print("[1]: Train the model")
         print("[2]: Test the model")
         print("[3]: Quick Test")    # DEBUG
@@ -413,6 +435,6 @@ if __name__ == '__main__':
             cam.camera_warm_up()
             frame = cam.get_thresh_img()
             print('\n', lane_model.drive_predict(frame))
-            cam.destroy()
+            cam.show_img(frame)
         else:                   # ### Exit
             break

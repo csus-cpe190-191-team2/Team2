@@ -91,9 +91,9 @@ class Eyes:
             matrix = cv2.getPerspectiveTransform(pts1, pts2)
             self.img_warp = cv2.warpPerspective(img_in, matrix, (self.w_t, self.h_t))
 
-    def show_img(self, img, string="Thresh Img"):
+    def show_img(self, img, string="Thresh Img", wait_ms=8000):
         cv2.imshow(string, img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(wait_ms):
             self.destroy()
 
     def save_img(self, path):
