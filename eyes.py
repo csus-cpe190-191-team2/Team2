@@ -52,6 +52,7 @@ class Eyes:
         self.img_thresh = []
         self.img_warp = []
         self.img_warp_inv = []
+        self.img_grayscale = []
 
         # Saved variable paths
         self.warp_fn = 'vars/warp_points.txt'
@@ -98,6 +99,13 @@ class Eyes:
             self.img = img
             self.thresholding()
         return self.img_thresh
+
+    def get_grayscale_img(self, get_img=False):
+        if get_img is True:
+            self.cap_img()
+        img_copy = self.img.copy()
+        self.img_grayscale = cv2.cvtColor(img_copy, cv2.COLOR_BGR2GRAY)
+
 
     def camera_warm_up(self, warm_time=5):
         print("Warming Up Camera...")
@@ -152,4 +160,8 @@ class Eyes:
     def save_thresh_img(self, path):
         if self.img_thresh is not None:
             cv2.imwrite(path, self.img_thresh)
+
+    def save_bw_img(self, path):
+        if self.img_grayscale is not None:
+            cv2.imwrite(path, self.img_grayscale)
 
